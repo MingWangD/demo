@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.ExamQualificationMapper">
+
+    <select id="selectAll" resultType="com.example.entity.ExamQualification">
+        select * from `exam_qualification`
+        <where>
+            <if test="id != null"> and id = #{id}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.ExamQualification">
+        select * from `exam_qualification` where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from `exam_qualification` where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.ExamQualification" useGeneratedKeys="true" keyProperty="id">
+        insert into `exam_qualification`(exam_id, student_id, attendance_count, required_count, qualification_rate, is_qualified, reason, create_time)
+        values (#{examId}, #{studentId}, #{attendanceCount}, #{requiredCount}, #{qualificationRate}, #{isQualified}, #{reason}, #{createTime})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.ExamQualification">
+        update `exam_qualification`
+        <set>
+            <if test="examId != null">exam_id = #{examId},</if>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="attendanceCount != null">attendance_count = #{attendanceCount},</if>
+            <if test="requiredCount != null">required_count = #{requiredCount},</if>
+            <if test="qualificationRate != null">qualification_rate = #{qualificationRate},</if>
+            <if test="isQualified != null">is_qualified = #{isQualified},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>

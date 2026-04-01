@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.HomeworkSubmissionMapper">
+
+    <select id="selectAll" resultType="com.example.entity.HomeworkSubmission">
+        select * from `homework_submission`
+        <where>
+            <if test="id != null"> and id = #{id}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.HomeworkSubmission">
+        select * from `homework_submission` where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from `homework_submission` where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.HomeworkSubmission" useGeneratedKeys="true" keyProperty="id">
+        insert into `homework_submission`(homework_id, student_id, submit_content, submit_time, score, is_late, status, teacher_comment, create_time, update_time)
+        values (#{homeworkId}, #{studentId}, #{submitContent}, #{submitTime}, #{score}, #{isLate}, #{status}, #{teacherComment}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.HomeworkSubmission">
+        update `homework_submission`
+        <set>
+            <if test="homeworkId != null">homework_id = #{homeworkId},</if>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="submitContent != null">submit_content = #{submitContent},</if>
+            <if test="submitTime != null">submit_time = #{submitTime},</if>
+            <if test="score != null">score = #{score},</if>
+            <if test="isLate != null">is_late = #{isLate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="teacherComment != null">teacher_comment = #{teacherComment},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>
