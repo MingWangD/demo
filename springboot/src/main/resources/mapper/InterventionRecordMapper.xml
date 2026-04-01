@@ -6,8 +6,12 @@
         select * from `intervention_record`
         <where>
             <if test="id != null"> and id = #{id}</if>
+            <if test="studentId != null"> and student_id = #{studentId}</if>
+            <if test="courseId != null"> and course_id = #{courseId}</if>
+            <if test="teacherId != null"> and teacher_id = #{teacherId}</if>
+            <if test="warningId != null"> and warning_id = #{warningId}</if>
         </where>
-        order by id desc
+        order by create_time desc, id desc
     </select>
 
     <select id="selectById" resultType="com.example.entity.InterventionRecord">

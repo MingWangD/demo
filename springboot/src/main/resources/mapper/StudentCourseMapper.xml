@@ -6,6 +6,8 @@
         select * from `student_course`
         <where>
             <if test="id != null"> and id = #{id}</if>
+            <if test="studentId != null"> and student_id = #{studentId}</if>
+            <if test="courseId != null"> and course_id = #{courseId}</if>
         </where>
         order by id desc
     </select>

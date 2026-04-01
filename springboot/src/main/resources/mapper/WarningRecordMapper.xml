@@ -6,8 +6,12 @@
         select * from `warning_record`
         <where>
             <if test="id != null"> and id = #{id}</if>
+            <if test="studentId != null"> and student_id = #{studentId}</if>
+            <if test="courseId != null"> and course_id = #{courseId}</if>
+            <if test="warningLevel != null"> and warning_level = #{warningLevel}</if>
+            <if test="status != null"> and status = #{status}</if>
         </where>
-        order by id desc
+        order by create_time desc, id desc
     </select>
 
     <select id="selectById" resultType="com.example.entity.WarningRecord">

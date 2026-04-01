@@ -6,6 +6,8 @@
         select * from `student_academic`
         <where>
             <if test="id != null"> and id = #{id}</if>
+            <if test="studentId != null"> and student_id = #{studentId}</if>
+            <if test="gpaColor != null"> and gpa_color = #{gpaColor}</if>
         </where>
         order by id desc
     </select>

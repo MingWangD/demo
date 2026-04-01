@@ -6,12 +6,18 @@
         select * from `exam_qualification`
         <where>
             <if test="id != null"> and id = #{id}</if>
+            <if test="examId != null"> and exam_id = #{examId}</if>
+            <if test="studentId != null"> and student_id = #{studentId}</if>
         </where>
         order by id desc
     </select>
 
     <select id="selectById" resultType="com.example.entity.ExamQualification">
         select * from `exam_qualification` where id = #{id}
+    </select>
+
+    <select id="selectByExamAndStudent" resultType="com.example.entity.ExamQualification">
+        select * from `exam_qualification` where exam_id = #{examId} and student_id = #{studentId}
     </select>
 
     <delete id="deleteById">
