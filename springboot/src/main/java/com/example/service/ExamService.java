@@ -35,9 +35,11 @@ public class ExamService {
         return exams;
     }
 
-    public void create(Exam exam) {
+    public void create(Exam exam, Long teacherId) {
+        validateCourseOwner(exam.getCourseId(), teacherId);
         exam.setCreateTime(LocalDateTime.now());
         exam.setUpdateTime(LocalDateTime.now());
+        exam.setTeacherId(teacherId);
         examMapper.insert(exam);
         recomputeQualifications(exam.getId());
     }
@@ -141,5 +143,13 @@ public class ExamService {
         academic.setGpaColor(GpaColorUtil.resolveColor(gpa));
         academic.setUpdateTime(LocalDateTime.now());
         studentAcademicMapper.updateById(academic);
+    }
+
+
+    private void validateCourseOwner(Long courseId, Long teacherId) {
+        Course c = courseMapper.selectById(courseId);
+        if (c == null || !teacherId.equals(c.getTeacherId())) {
+            throw new CustomException("无权限操作该课程考试");
+        }
     }
 }

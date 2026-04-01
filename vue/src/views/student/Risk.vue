@@ -1,5 +1,6 @@
 <template>
   <div>
+    <h3 style="margin:0 0 10px 0;color:#303133">风险与趋势详情</h3>
     <div class="card">当前风险：{{detail?.risk?.riskProbability}} / {{detail?.risk?.riskLevel}} / {{detail?.risk?.warningColor}}</div>
     <div class="card" style="margin-top:10px">原因：{{detail?.risk?.mainReason}}</div>
     <div class="card" style="margin-top:10px"><base-line-chart title="风险趋势" :x-data="riskX" :y-data="riskY"/></div>

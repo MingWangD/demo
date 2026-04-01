@@ -1,6 +1,7 @@
 package com.example.service;
 
 import com.example.entity.*;
+import com.example.exception.CustomException;
 import com.example.mapper.*;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,6 @@ public class TeacherService {
     @Resource private HomeworkMapper homeworkMapper;
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
     @Resource private ExamRecordMapper examRecordMapper;
-    @Resource private ExamMapper examMapper;
     @Resource private ExamService examService;
 
     public List<Course> courseList(Long teacherId) {
@@ -28,7 +28,8 @@ public class TeacherService {
         return courseMapper.selectAll(q);
     }
 
-    public Map<String, Object> studentDetail(Long studentId, Long courseId) {
+    public Map<String, Object> studentDetail(Long teacherId, Long studentId, Long courseId) {
+        if (courseId != null) validateCourseOwner(courseId, teacherId);
         Map<String, Object> m = new HashMap<>();
         m.put("student", sysUserMapper.selectById(studentId));
 
@@ -55,9 +56,12 @@ public class TeacherService {
         return m;
     }
 
-    public List<Map<String, Object>> highRisk(Long courseId, String riskLevel, String gpaColor) {
+    public List<Map<String, Object>> highRisk(Long teacherId, Long courseId, String riskLevel, String gpaColor) {
+        if (courseId != null) validateCourseOwner(courseId, teacherId);
+        Set<Long> allowedCourseIds = courseList(teacherId).stream().map(Course::getId).collect(Collectors.toSet());
         List<RiskPrediction> list = riskPredictionMapper.selectAll(new RiskPrediction());
         return list.stream()
+                .filter(r -> r.getCourseId() == null || allowedCourseIds.contains(r.getCourseId()))
                 .filter(r -> courseId == null || courseId.equals(r.getCourseId()))
                 .filter(r -> riskLevel == null || riskLevel.isEmpty() || riskLevel.equals(r.getRiskLevel()))
                 .map(r -> {
@@ -74,7 +78,8 @@ public class TeacherService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> homeworkManage(Long courseId) {
+    public List<Map<String, Object>> homeworkManage(Long teacherId, Long courseId) {
+        validateCourseOwner(courseId, teacherId);
         Homework q = new Homework(); q.setCourseId(courseId);
         List<Homework> homeworks = homeworkMapper.selectAll(q);
         return homeworks.stream().map(hw -> {
@@ -86,8 +91,10 @@ public class TeacherService {
         }).toList();
     }
 
-    public void gradeHomework(Long submissionId, java.math.BigDecimal score, String comment) {
+    public void gradeHomework(Long teacherId, Long submissionId, java.math.BigDecimal score, String comment) {
         HomeworkSubmission sub = homeworkSubmissionMapper.selectById(submissionId);
+        Homework hw = homeworkMapper.selectById(sub.getHomeworkId());
+        validateCourseOwner(hw.getCourseId(), teacherId);
         sub.setScore(score);
         sub.setTeacherComment(comment);
         sub.setStatus("GRADED");
@@ -95,7 +102,8 @@ public class TeacherService {
         homeworkSubmissionMapper.updateById(sub);
     }
 
-    public List<Map<String,Object>> examManage(Long courseId) {
+    public List<Map<String,Object>> examManage(Long teacherId, Long courseId) {
+        validateCourseOwner(courseId, teacherId);
         Exam e = new Exam(); e.setCourseId(courseId);
         return examMapper.selectAll(e).stream().map(ex -> {
             examService.recomputeQualifications(ex.getId());
@@ -104,5 +112,12 @@ public class TeacherService {
             m.put("details", examService.manageDetail(ex.getId()));
             return m;
         }).toList();
+    }
+
+    private void validateCourseOwner(Long courseId, Long teacherId) {
+        Course c = courseMapper.selectById(courseId);
+        if (c == null || !teacherId.equals(c.getTeacherId())) {
+            throw new CustomException("无权限操作非本人课程");
+        }
     }
 }

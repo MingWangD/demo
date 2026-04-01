@@ -1,5 +1,6 @@
 <template>
   <div>
+    <h3 style="margin:0 0 10px 0;color:#303133">学生学情详情</h3>
     <div class="card">
       <el-input v-model="studentId" placeholder="学生ID" style="width:120px;margin-right:8px"/>
       <el-input v-model="courseId" placeholder="课程ID(可选)" style="width:140px;margin-right:8px"/>

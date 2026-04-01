@@ -1,5 +1,6 @@
 <template>
   <div>
+    <h3 style="margin:0 0 10px 0;color:#303133">高风险学生筛选</h3>
     <div class="card">
       <el-input v-model="filters.courseId" placeholder="课程ID" style="width:120px;margin-right:8px"/>
       <el-select v-model="filters.riskLevel" placeholder="风险等级" style="width:120px;margin-right:8px">
@@ -10,7 +11,7 @@
       </el-select>
       <el-button type="primary" @click="load">筛选</el-button>
     </div>
-    <el-table :data="list" style="margin-top:10px">
+    <el-table :data="list" empty-text="暂无数据，请调整筛选条件" style="margin-top:10px">
       <el-table-column label="学生" prop="student.name"/>
       <el-table-column label="风险概率" prop="risk.riskProbability"/>
       <el-table-column label="风险等级" prop="risk.riskLevel"/>
