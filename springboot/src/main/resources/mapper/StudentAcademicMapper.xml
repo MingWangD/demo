@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.StudentAcademicMapper">
+
+    <select id="selectAll" resultType="com.example.entity.StudentAcademic">
+        select * from `student_academic`
+        <where>
+            <if test="id != null"> and id = #{id}</if>
+            <if test="studentId != null"> and student_id = #{studentId}</if>
+            <if test="gpaColor != null"> and gpa_color = #{gpaColor}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.StudentAcademic">
+        select * from `student_academic` where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from `student_academic` where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.StudentAcademic" useGeneratedKeys="true" keyProperty="id">
+        insert into `student_academic`(student_id, total_credit, earned_credit, gpa, gpa_color, risk_note, update_time)
+        values (#{studentId}, #{totalCredit}, #{earnedCredit}, #{gpa}, #{gpaColor}, #{riskNote}, #{updateTime})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.StudentAcademic">
+        update `student_academic`
+        <set>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="totalCredit != null">total_credit = #{totalCredit},</if>
+            <if test="earnedCredit != null">earned_credit = #{earnedCredit},</if>
+            <if test="gpa != null">gpa = #{gpa},</if>
+            <if test="gpaColor != null">gpa_color = #{gpaColor},</if>
+            <if test="riskNote != null">risk_note = #{riskNote},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>
