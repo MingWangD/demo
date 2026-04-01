@@ -1,0 +1,22 @@
+# IDE
+.idea/
+*.iml
+
+# Java / Maven
+**/target/
+out/
+*.class
+*.log
+
+# Frontend
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Env files
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
