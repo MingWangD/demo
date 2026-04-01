@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.RiskPredictionMapper">
+
+    <select id="selectAll" resultType="com.example.entity.RiskPrediction">
+        select * from `risk_prediction`
+        <where>
+            <if test="id != null"> and id = #{id}</if>
+            <if test="studentId != null"> and student_id = #{studentId}</if>
+            <if test="courseId != null"> and course_id = #{courseId}</if>
+            <if test="riskLevel != null"> and risk_level = #{riskLevel}</if>
+        </where>
+        order by predict_time desc, id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.RiskPrediction">
+        select * from `risk_prediction` where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from `risk_prediction` where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.RiskPrediction" useGeneratedKeys="true" keyProperty="id">
+        insert into `risk_prediction`(student_id, course_id, risk_probability, risk_label, risk_level, warning_color, main_reason, model_version, predict_time, create_time)
+        values (#{studentId}, #{courseId}, #{riskProbability}, #{riskLabel}, #{riskLevel}, #{warningColor}, #{mainReason}, #{modelVersion}, #{predictTime}, #{createTime})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.RiskPrediction">
+        update `risk_prediction`
+        <set>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="riskProbability != null">risk_probability = #{riskProbability},</if>
+            <if test="riskLabel != null">risk_label = #{riskLabel},</if>
+            <if test="riskLevel != null">risk_level = #{riskLevel},</if>
+            <if test="warningColor != null">warning_color = #{warningColor},</if>
+            <if test="mainReason != null">main_reason = #{mainReason},</if>
+            <if test="modelVersion != null">model_version = #{modelVersion},</if>
+            <if test="predictTime != null">predict_time = #{predictTime},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>
