@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.StudentFeatureMapper">
+
+    <select id="selectAll" resultType="com.example.entity.StudentFeature">
+        select * from `student_feature`
+        <where>
+            <if test="id != null"> and id = #{id}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.StudentFeature">
+        select * from `student_feature` where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from `student_feature` where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.StudentFeature" useGeneratedKeys="true" keyProperty="id">
+        insert into `student_feature`(student_id, course_id, attendance_count, attendance_rate, homework_submit_rate, homework_avg_score, exam_avg_score, earned_credit, gpa, missing_homework_count, absent_exam_count, recent_risk_trend, feature_date, create_time)
+        values (#{studentId}, #{courseId}, #{attendanceCount}, #{attendanceRate}, #{homeworkSubmitRate}, #{homeworkAvgScore}, #{examAvgScore}, #{earnedCredit}, #{gpa}, #{missingHomeworkCount}, #{absentExamCount}, #{recentRiskTrend}, #{featureDate}, #{createTime})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.StudentFeature">
+        update `student_feature`
+        <set>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="attendanceCount != null">attendance_count = #{attendanceCount},</if>
+            <if test="attendanceRate != null">attendance_rate = #{attendanceRate},</if>
+            <if test="homeworkSubmitRate != null">homework_submit_rate = #{homeworkSubmitRate},</if>
+            <if test="homeworkAvgScore != null">homework_avg_score = #{homeworkAvgScore},</if>
+            <if test="examAvgScore != null">exam_avg_score = #{examAvgScore},</if>
+            <if test="earnedCredit != null">earned_credit = #{earnedCredit},</if>
+            <if test="gpa != null">gpa = #{gpa},</if>
+            <if test="missingHomeworkCount != null">missing_homework_count = #{missingHomeworkCount},</if>
+            <if test="absentExamCount != null">absent_exam_count = #{absentExamCount},</if>
+            <if test="recentRiskTrend != null">recent_risk_trend = #{recentRiskTrend},</if>
+            <if test="featureDate != null">feature_date = #{featureDate},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>

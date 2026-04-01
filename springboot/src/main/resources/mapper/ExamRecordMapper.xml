@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.ExamRecordMapper">
+
+    <select id="selectAll" resultType="com.example.entity.ExamRecord">
+        select * from `exam_record`
+        <where>
+            <if test="id != null"> and id = #{id}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.ExamRecord">
+        select * from `exam_record` where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from `exam_record` where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.ExamRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into `exam_record`(exam_id, student_id, score, submit_time, status, remark, create_time, update_time)
+        values (#{examId}, #{studentId}, #{score}, #{submitTime}, #{status}, #{remark}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.ExamRecord">
+        update `exam_record`
+        <set>
+            <if test="examId != null">exam_id = #{examId},</if>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="score != null">score = #{score},</if>
+            <if test="submitTime != null">submit_time = #{submitTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>

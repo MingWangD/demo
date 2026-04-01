@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.StudentAttendanceMapper">
+
+    <select id="selectAll" resultType="com.example.entity.StudentAttendance">
+        select * from `student_attendance`
+        <where>
+            <if test="id != null"> and id = #{id}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectById" resultType="com.example.entity.StudentAttendance">
+        select * from `student_attendance` where id = #{id}
+    </select>
+
+    <delete id="deleteById">
+        delete from `student_attendance` where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.StudentAttendance" useGeneratedKeys="true" keyProperty="id">
+        insert into `student_attendance`(student_id, course_id, attendance_type, attendance_time, week_no, remark)
+        values (#{studentId}, #{courseId}, #{attendanceType}, #{attendanceTime}, #{weekNo}, #{remark})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.StudentAttendance">
+        update `student_attendance`
+        <set>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="attendanceType != null">attendance_type = #{attendanceType},</if>
+            <if test="attendanceTime != null">attendance_time = #{attendanceTime},</if>
+            <if test="weekNo != null">week_no = #{weekNo},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>
