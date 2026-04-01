@@ -18,6 +18,8 @@ const router = createRouter({
         { path: 'teacher-dashboard', component: () => import('@/views/teacher/Dashboard.vue')},
         { path: 'teacher-homework', component: () => import('@/views/teacher/HomeworkManage.vue')},
         { path: 'teacher-exam', component: () => import('@/views/teacher/ExamManage.vue')},
+        { path: 'teacher-high-risk', component: () => import('@/views/teacher/HighRisk.vue')},
+        { path: 'teacher-student-detail', component: () => import('@/views/teacher/StudentDetail.vue')},
         { path: 'teacher-intervention', component: () => import('@/views/teacher/Intervention.vue')},
       ]
     },

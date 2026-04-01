@@ -1,12 +1,18 @@
-<template>
-  <div>
-    <div style="font-weight:bold; margin-bottom:8px">{{ title }}</div>
-    <el-table :data="data || []" size="small" border>
-      <el-table-column prop="name" label="分类"/>
-      <el-table-column prop="value" label="数量"/>
-    </el-table>
-  </div>
-</template>
+<template><div ref="el" style="height:300px;width:100%"></div></template>
 <script setup>
-defineProps({ title: String, data: Array })
+import {onMounted, ref, watch} from 'vue'
+const props = defineProps({ title: String, data: Array })
+const el = ref(); let chart
+const render = () => {
+  if (!el.value || !window.echarts) return
+  if (!chart) chart = window.echarts.init(el.value)
+  chart.setOption({
+    title: { text: props.title || '' },
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0 },
+    series: [{ type: 'pie', radius: ['40%','70%'], data: props.data || [] }]
+  })
+}
+onMounted(render)
+watch(() => props.data, render)
 </script>

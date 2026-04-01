@@ -17,6 +17,8 @@
             <el-menu-item index="/manager/teacher-dashboard">教师看板</el-menu-item>
             <el-menu-item index="/manager/teacher-homework">作业管理</el-menu-item>
             <el-menu-item index="/manager/teacher-exam">考试管理</el-menu-item>
+            <el-menu-item index="/manager/teacher-high-risk">高风险筛选</el-menu-item>
+            <el-menu-item index="/manager/teacher-student-detail">学生学情详情</el-menu-item>
             <el-menu-item index="/manager/teacher-intervention">干预记录</el-menu-item>
           </template>
           <template v-else>

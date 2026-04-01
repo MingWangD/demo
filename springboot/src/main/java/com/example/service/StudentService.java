@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.algorithm.FeatureExtractor;
+import com.example.algorithm.RiskPredictor;
 import com.example.entity.*;
 import com.example.mapper.*;
 import jakarta.annotation.Resource;
@@ -22,6 +24,9 @@ public class StudentService {
     @Resource private ExamMapper examMapper;
     @Resource private ExamQualificationMapper examQualificationMapper;
     @Resource private ExamRecordMapper examRecordMapper;
+    @Resource private ExamService examService;
+    @Resource private FeatureExtractor featureExtractor;
+    @Resource private RiskPredictor riskPredictor;
 
     public Map<String, Object> overview(Long studentId) {
         Map<String, Object> res = new HashMap<>();
@@ -79,6 +84,7 @@ public class StudentService {
         Exam q = new Exam(); q.setCourseId(courseId);
         List<Exam> exams = examMapper.selectAll(q);
         return exams.stream().map(exam -> {
+            examService.recomputeQualification(exam.getId(), studentId);
             ExamQualification qualification = examQualificationMapper.selectByExamAndStudent(exam.getId(), studentId);
             Map<String, Object> m = new HashMap<>();
             m.put("examId", exam.getId());
@@ -122,4 +128,28 @@ public class StudentService {
         m.put("homeworkScores", homeworks.stream().map(HomeworkSubmission::getScore).toList());
         return m;
     }
+
+
+    public void updateAcademic(Long studentId, BigDecimal earnedCredit, BigDecimal gpa, String gpaColor) {
+        StudentAcademic q = new StudentAcademic(); q.setStudentId(studentId);
+        StudentAcademic academic = studentAcademicMapper.selectAll(q).stream().findFirst().orElse(null);
+        if (academic == null) {
+            academic = new StudentAcademic();
+            academic.setStudentId(studentId);
+            academic.setTotalCredit(new BigDecimal("20"));
+            academic.setUpdateTime(java.time.LocalDateTime.now());
+            studentAcademicMapper.insert(academic);
+        }
+        academic.setEarnedCredit(earnedCredit);
+        academic.setGpa(gpa);
+        academic.setGpaColor(gpaColor);
+        academic.setUpdateTime(java.time.LocalDateTime.now());
+        studentAcademicMapper.updateById(academic);
+
+        for (Course c : courses(studentId)) {
+            StudentFeature f = featureExtractor.extractAndSave(studentId, c.getId());
+            riskPredictor.predictAndSave(f);
+        }
+    }
+
 }

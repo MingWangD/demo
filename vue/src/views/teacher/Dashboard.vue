@@ -6,6 +6,14 @@
       <div class="card" style="flex:1"><base-pie-chart title="GPA颜色分布" :data="gpaPie"/></div>
     </div>
     <div class="card" style="margin-top:10px"><base-line-chart title="风险趋势" :x-data="trendX" :y-data="trendY"/></div>
+    <div class="card" style="margin-top:10px">
+      <h4>高风险学生列表</h4>
+      <el-table :data="data.highRiskStudents || []">
+        <el-table-column prop="studentId" label="学生ID"/>
+        <el-table-column prop="riskProbability" label="风险概率"/>
+        <el-table-column prop="mainReason" label="主要原因"/>
+      </el-table>
+    </div>
   </div>
 </template>
 <script setup>
