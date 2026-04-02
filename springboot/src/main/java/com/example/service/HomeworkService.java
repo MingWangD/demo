@@ -15,6 +15,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.List;
 
 @Service
@@ -40,22 +41,49 @@ public class HomeworkService {
 
     public void submit(HomeworkSubmitRequest req) {
         HomeworkSubmission old = homeworkSubmissionMapper.selectByHomeworkAndStudent(req.getHomeworkId(), req.getStudentId());
+        LocalDateTime now = LocalDateTime.now();
         if (old == null) {
             old = new HomeworkSubmission();
             old.setHomeworkId(req.getHomeworkId());
             old.setStudentId(req.getStudentId());
-            old.setCreateTime(LocalDateTime.now());
-            homeworkSubmissionMapper.insert(old);
+            old.setCreateTime(now);
         }
         old.setSubmitContent(req.getSubmitContent());
-        old.setSubmitTime(LocalDateTime.now());
+        old.setSubmitTime(now);
         old.setStatus("SUBMITTED");
-        old.setUpdateTime(LocalDateTime.now());
-        homeworkSubmissionMapper.updateById(old);
-
         Homework hw = homeworkMapper.selectById(req.getHomeworkId());
+        int objectiveCount = count(hw.getContent(), "客观题");
+        int subjectiveCount = count(hw.getContent(), "主观题");
+        java.math.BigDecimal autoScore = java.math.BigDecimal.valueOf(Math.min(objectiveCount * 2, 100));
+        old.setScore(autoScore);
+        if (subjectiveCount > 0) {
+            old.setTeacherComment("系统已自动判客观题得分：" + autoScore + "，主观题待教师批改");
+        }
+        old.setUpdateTime(now);
+        if (old.getId() == null) {
+            homeworkSubmissionMapper.insert(old);
+        } else {
+            homeworkSubmissionMapper.updateById(old);
+        }
+
         StudentFeature feature = featureExtractor.extractAndSave(req.getStudentId(), hw.getCourseId());
         riskPredictor.predictAndSave(feature);
+    }
+
+    public void undo(Long teacherId, Long homeworkId) {
+        Homework hw = homeworkMapper.selectById(homeworkId);
+        validateCourseOwner(hw.getCourseId(), teacherId);
+        HomeworkSubmission q = new HomeworkSubmission();
+        q.setHomeworkId(homeworkId);
+        homeworkSubmissionMapper.selectAll(q).stream().map(HomeworkSubmission::getId).filter(Objects::nonNull).forEach(homeworkSubmissionMapper::deleteById);
+        homeworkMapper.deleteById(homeworkId);
+    }
+
+    private int count(String text, String keyword) {
+        if (text == null || keyword == null || keyword.isEmpty()) return 0;
+        int c = 0, idx = 0;
+        while ((idx = text.indexOf(keyword, idx)) >= 0) { c++; idx += keyword.length(); }
+        return c;
     }
 
 
