@@ -27,4 +27,10 @@ public class InterventionController {
     public Result options() {
         return Result.success(interventionService.warningOptions(AuthContext.userId()));
     }
+
+    @PostMapping("/undo")
+    public Result undo(@RequestParam Long interventionId) {
+        interventionService.undo(interventionId, AuthContext.userId());
+        return Result.success();
+    }
 }

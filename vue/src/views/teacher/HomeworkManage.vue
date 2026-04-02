@@ -13,11 +13,14 @@
     </div>
 
     <div class="card" style="margin-top:10px" v-for="item in list" :key="item.homework.id">
-      <h4>{{item.homework.title}} (ID:{{item.homework.id}})</h4>
+      <h4>{{item.homework.title}} (ID:{{item.homework.id}})
+        <el-button size="small" type="danger" plain style="margin-left:10px" @click="undo(item.homework.id)">撤销发布</el-button>
+      </h4>
       <el-table :data="item.submissions || []" empty-text="暂无提交记录">
         <el-table-column prop="studentId" label="学生ID"/>
         <el-table-column prop="status" label="状态"/>
         <el-table-column prop="score" label="分数"/>
+        <el-table-column prop="submitContent" label="学生作答"/>
         <el-table-column prop="teacherComment" label="评语"/>
         <el-table-column label="评分">
           <template #default="scope">
@@ -75,5 +78,6 @@ const create=async()=>{
 }
 const load=async()=>{const r=await request.get('/api/teacher/homework-manage',{params:{courseId:form.courseId}}); list.value=r.data||[]}
 const grade=async(row)=>{await request.post('/api/teacher/homework-grade',null,{params:{submissionId:row.id,score:row._score||row.score||0,comment:row._comment||''}}); load()}
+const undo=async(homeworkId)=>{await request.post('/api/homework/undo',null,{params:{homeworkId}}); load()}
 loadCourses().then(load)
 </script>

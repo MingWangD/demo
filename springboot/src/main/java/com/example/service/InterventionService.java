@@ -55,6 +55,12 @@ public class InterventionService {
         q.setStatus("OPEN");
         return warningRecordMapper.selectAll(q).stream()
                 .filter(w -> w.getCourseId() != null && courseIds.contains(w.getCourseId()))
+                .collect(Collectors.toMap(
+                        w -> w.getStudentId() + "_" + w.getWarningType() + "_" + w.getCourseId(),
+                        w -> w,
+                        (a, b) -> b
+                ))
+                .values().stream()
                 .map(w -> {
                     Map<String, Object> m = new HashMap<>();
                     SysUser student = sysUserMapper.selectById(w.getStudentId());
@@ -66,5 +72,13 @@ public class InterventionService {
                     m.put("warningLevel", w.getWarningLevel());
                     return m;
                 }).toList();
+    }
+
+    public void undo(Long interventionId, Long teacherId) {
+        InterventionRecord record = interventionRecordMapper.selectById(interventionId);
+        if (record == null || !teacherId.equals(record.getTeacherId())) {
+            return;
+        }
+        interventionRecordMapper.deleteById(interventionId);
     }
 }

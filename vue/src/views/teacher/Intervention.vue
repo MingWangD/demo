@@ -20,6 +20,7 @@
           <div style="font-weight:600;margin-bottom:4px">学生ID：{{item.studentId}} · 干预类型：{{item.interventionType}}</div>
           <div style="color:#606266">干预内容：{{item.interventionContent}}</div>
           <div style="color:#909399">干预结果：{{item.interventionResult || '待观察'}}</div>
+          <el-button size="small" type="danger" plain style="margin-top:6px" @click="undo(item.id)">撤销</el-button>
         </el-timeline-item>
       </el-timeline>
     </div>
@@ -48,5 +49,6 @@ const add=async()=>{
   })
   await Promise.all([load(), loadOptions()])
 }
+const undo=async(interventionId)=>{await request.post('/api/intervention/undo',null,{params:{interventionId}}); load()}
 onMounted(async()=>{await Promise.all([load(), loadOptions()])})
 </script>

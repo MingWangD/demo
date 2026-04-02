@@ -86,12 +86,17 @@ public class StudentService {
         return exams.stream().map(exam -> {
             examService.recomputeQualification(exam.getId(), studentId);
             ExamQualification qualification = examQualificationMapper.selectByExamAndStudent(exam.getId(), studentId);
+            ExamRecord record = examRecordMapper.selectByExamAndStudent(exam.getId(), studentId);
             Map<String, Object> m = new HashMap<>();
             m.put("examId", exam.getId());
             m.put("examName", exam.getExamName());
             m.put("examTime", exam.getExamTime());
             m.put("isQualified", qualification != null && Boolean.TRUE.equals(qualification.getIsQualified()));
             m.put("qualificationReason", qualification == null ? "未生成资格" : qualification.getReason());
+            m.put("score", record == null ? null : record.getScore());
+            m.put("status", record == null ? "NOT_JOINED" : record.getStatus());
+            m.put("autoJudgeRemark", record == null ? null : record.getRemark());
+            m.put("submitTime", record == null ? null : record.getSubmitTime());
             return m;
         }).toList();
     }

@@ -12,12 +12,15 @@
       <el-button @click="load" style="margin-left:8px">刷新管理列表</el-button>
     </div>
     <div class="card" style="margin-top:10px" v-for="item in list" :key="item.exam.id">
-      <h4>{{item.exam.examName}} (ID:{{item.exam.id}})</h4>
+      <h4>{{item.exam.examName}} (ID:{{item.exam.id}})
+        <el-button size="small" type="danger" plain style="margin-left:10px" @click="undo(item.exam.id)">撤销发布</el-button>
+      </h4>
       <el-table :data="item.details || []" empty-text="暂无考试明细">
         <el-table-column label="学生ID" prop="qualification.studentId"/>
         <el-table-column label="资格" prop="qualification.isQualified"/>
         <el-table-column label="资格说明" prop="qualification.reason"/>
         <el-table-column label="成绩" prop="record.score"/>
+        <el-table-column label="作答/判分说明" prop="record.remark"/>
       </el-table>
     </div>
 
@@ -63,5 +66,6 @@ const create=async()=>{
   load()
 }
 const load=async()=>{const r=await request.get('/api/teacher/exam-manage',{params:{courseId:form.courseId}}); list.value=r.data||[]}
+const undo=async(examId)=>{await request.post('/api/exam/undo',null,{params:{examId}}); load()}
 loadCourses().then(load)
 </script>

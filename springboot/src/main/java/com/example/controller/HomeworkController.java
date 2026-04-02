@@ -19,6 +19,12 @@ public class HomeworkController {
     @PostMapping("/create")
     public Result create(@RequestBody Homework homework) { homeworkService.create(homework, AuthContext.userId()); return Result.success(); }
 
+    @PostMapping("/undo")
+    public Result undo(@RequestParam Long homeworkId) {
+        homeworkService.undo(AuthContext.userId(), homeworkId);
+        return Result.success();
+    }
+
     @PostMapping("/submit")
     public Result submit(@RequestBody HomeworkSubmitRequest request) {
         if ("STUDENT".equals(AuthContext.role())) {
