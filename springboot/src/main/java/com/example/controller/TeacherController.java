@@ -41,4 +41,10 @@ public class TeacherController {
 
     @GetMapping("/exam-manage")
     public Result examManage(@RequestParam Long courseId) { return Result.success(teacherService.examManage(AuthContext.userId(), courseId)); }
+
+    @PostMapping("/exam-grade")
+    public Result examGrade(@RequestParam Long recordId, @RequestParam BigDecimal subjectiveScore, @RequestParam(required = false) String comment) {
+        teacherService.gradeExam(AuthContext.userId(), recordId, subjectiveScore, comment);
+        return Result.success();
+    }
 }

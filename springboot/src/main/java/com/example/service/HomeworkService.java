@@ -11,6 +11,8 @@ import com.example.mapper.HomeworkSubmissionMapper;
 import com.example.mapper.CourseMapper;
 import com.example.entity.Course;
 import com.example.exception.CustomException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ import java.util.List;
 
 @Service
 public class HomeworkService {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     @Resource private HomeworkMapper homeworkMapper;
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
     @Resource private FeatureExtractor featureExtractor;
@@ -42,19 +45,33 @@ public class HomeworkService {
     public void submit(HomeworkSubmitRequest req) {
         HomeworkSubmission old = homeworkSubmissionMapper.selectByHomeworkAndStudent(req.getHomeworkId(), req.getStudentId());
         LocalDateTime now = LocalDateTime.now();
+        if (old != null && "GRADED".equals(old.getStatus())) {
+            throw new CustomException("该作业已批改，不能再次修改");
+        }
         if (old == null) {
             old = new HomeworkSubmission();
             old.setHomeworkId(req.getHomeworkId());
             old.setStudentId(req.getStudentId());
             old.setCreateTime(now);
         }
-        old.setSubmitContent(req.getSubmitContent());
+        java.util.Map<String, Object> incoming = readJson(req.getSubmitContent());
+        java.util.Map<String, Object> existing = readJson(old.getSubmitContent());
+        boolean objectiveLocked = Boolean.TRUE.equals(existing.get("objectiveLocked"));
+        int objectiveAnswered = num(objectiveLocked ? existing.get("objectiveAnswered") : incoming.get("objectiveAnswered"));
+        int objectiveScoreInt = objectiveAnswered * 2;
+        String subjectiveAnswer = String.valueOf(incoming.getOrDefault("subjectiveAnswer", existing.getOrDefault("subjectiveAnswer", "")));
+        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("objectiveLocked", true);
+        payload.put("objectiveAnswered", objectiveAnswered);
+        payload.put("objectiveScore", objectiveScoreInt);
+        payload.put("objectiveDetail", objectiveLocked ? existing.get("objectiveDetail") : incoming.get("objectiveDetail"));
+        payload.put("subjectiveAnswer", subjectiveAnswer);
+        old.setSubmitContent(writeJson(payload));
         old.setSubmitTime(now);
         old.setStatus("SUBMITTED");
         Homework hw = homeworkMapper.selectById(req.getHomeworkId());
-        int objectiveCount = count(hw.getContent(), "客观题");
         int subjectiveCount = count(hw.getContent(), "主观题");
-        java.math.BigDecimal autoScore = java.math.BigDecimal.valueOf(Math.min(objectiveCount * 2, 100));
+        java.math.BigDecimal autoScore = java.math.BigDecimal.valueOf(Math.min(objectiveScoreInt, 100));
         old.setScore(autoScore);
         if (subjectiveCount > 0) {
             old.setTeacherComment("系统已自动判客观题得分：" + autoScore + "，主观题待教师批改");
@@ -84,6 +101,29 @@ public class HomeworkService {
         int c = 0, idx = 0;
         while ((idx = text.indexOf(keyword, idx)) >= 0) { c++; idx += keyword.length(); }
         return c;
+    }
+
+    private java.util.Map<String, Object> readJson(String raw) {
+        if (raw == null || raw.isEmpty()) return new java.util.HashMap<>();
+        try {
+            return MAPPER.readValue(raw, new TypeReference<java.util.Map<String, Object>>() {});
+        } catch (Exception e) {
+            return new java.util.HashMap<>();
+        }
+    }
+
+    private String writeJson(java.util.Map<String, Object> map) {
+        try {
+            return MAPPER.writeValueAsString(map);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private int num(Object v) {
+        if (v == null) return 0;
+        if (v instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(String.valueOf(v)); } catch (Exception e) { return 0; }
     }
 
 

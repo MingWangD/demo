@@ -91,6 +91,7 @@ public class StudentService {
             m.put("examId", exam.getId());
             m.put("examName", exam.getExamName());
             m.put("examTime", exam.getExamTime());
+            m.put("description", exam.getDescription());
             m.put("isQualified", qualification != null && Boolean.TRUE.equals(qualification.getIsQualified()));
             m.put("qualificationReason", qualification == null ? "未生成资格" : qualification.getReason());
             m.put("score", record == null ? null : record.getScore());

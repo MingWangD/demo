@@ -20,6 +20,7 @@ public class TeacherService {
     @Resource private StudentAttendanceMapper studentAttendanceMapper;
     @Resource private HomeworkMapper homeworkMapper;
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
+    @Resource private ExamMapper examMapper;
     @Resource private ExamRecordMapper examRecordMapper;
     @Resource private ExamMapper examMapper;
     @Resource private ExamService examService;
@@ -109,11 +110,26 @@ public class TeacherService {
         HomeworkSubmission sub = homeworkSubmissionMapper.selectById(submissionId);
         Homework hw = homeworkMapper.selectById(sub.getHomeworkId());
         validateCourseOwner(hw.getCourseId(), teacherId);
-        sub.setScore(score);
+        java.math.BigDecimal objective = sub.getScore() == null ? java.math.BigDecimal.ZERO : sub.getScore();
+        java.math.BigDecimal finalScore = objective.add(score == null ? java.math.BigDecimal.ZERO : score);
+        sub.setScore(finalScore.min(new java.math.BigDecimal("100")));
         sub.setTeacherComment(comment);
         sub.setStatus("GRADED");
         sub.setUpdateTime(java.time.LocalDateTime.now());
         homeworkSubmissionMapper.updateById(sub);
+    }
+
+    public void gradeExam(Long teacherId, Long recordId, java.math.BigDecimal subjectiveScore, String comment) {
+        ExamRecord record = examRecordMapper.selectById(recordId);
+        if (record == null) return;
+        Exam ex = examMapper.selectById(record.getExamId());
+        validateCourseOwner(ex.getCourseId(), teacherId);
+        java.math.BigDecimal objective = record.getScore() == null ? java.math.BigDecimal.ZERO : record.getScore();
+        java.math.BigDecimal finalScore = objective.add(subjectiveScore == null ? java.math.BigDecimal.ZERO : subjectiveScore);
+        record.setScore(finalScore.min(new java.math.BigDecimal("100")));
+        record.setRemark((record.getRemark() == null ? "" : record.getRemark() + "；") + "教师主观题评分：" + (subjectiveScore == null ? 0 : subjectiveScore) + "；" + (comment == null ? "" : comment));
+        record.setUpdateTime(java.time.LocalDateTime.now());
+        examRecordMapper.updateById(record);
     }
 
     public List<Map<String,Object>> examManage(Long teacherId, Long courseId) {

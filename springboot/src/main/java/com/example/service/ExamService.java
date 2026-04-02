@@ -6,6 +6,8 @@ import com.example.common.GpaColorUtil;
 import com.example.dto.ExamSubmitRequest;
 import com.example.entity.*;
 import com.example.exception.CustomException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.mapper.*;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class ExamService {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     @Resource private ExamMapper examMapper;
     @Resource private ExamRecordMapper examRecordMapper;
     @Resource private ExamQualificationMapper examQualificationMapper;
@@ -37,6 +40,9 @@ public class ExamService {
 
     public void create(Exam exam, Long teacherId) {
         validateCourseOwner(exam.getCourseId(), teacherId);
+        if (exam.getTotalScore() == null || exam.getTotalScore().compareTo(new BigDecimal("100")) != 0) {
+            throw new CustomException("考试总分必须为100分");
+        }
         exam.setCreateTime(LocalDateTime.now());
         exam.setUpdateTime(LocalDateTime.now());
         exam.setTeacherId(teacherId);
@@ -53,22 +59,25 @@ public class ExamService {
         Exam exam = examMapper.selectById(req.getExamId());
         ExamRecord record = examRecordMapper.selectByExamAndStudent(req.getExamId(), req.getStudentId());
         LocalDateTime now = LocalDateTime.now();
+        if (record != null && "FINISHED".equals(record.getStatus())) {
+            throw new CustomException("考试已提交，不可修改");
+        }
         if (record == null) {
             record = new ExamRecord();
             record.setExamId(req.getExamId());
             record.setStudentId(req.getStudentId());
             record.setCreateTime(now);
         }
-        record.setScore(req.getScore());
-        int objectiveCount = count(exam.getDescription(), "客观题");
+        Map<String, Object> payload = readJson(req.getAnswerContent());
+        int objectiveAnswered = num(payload.get("objectiveAnswered"));
         int subjectiveCount = count(exam.getDescription(), "主观题");
-        BigDecimal autoScore = BigDecimal.valueOf(Math.min(objectiveCount * 2, 100));
+        BigDecimal autoScore = BigDecimal.valueOf(Math.min(objectiveAnswered * 2, 100));
         record.setScore(autoScore);
+        payload.put("objectiveLocked", true);
+        payload.put("objectiveScore", autoScore);
         String remark = "系统已自动判客观题得分：" + autoScore;
         if (subjectiveCount > 0) remark += "，主观题待教师批改";
-        if (req.getAnswerContent() != null && !req.getAnswerContent().isEmpty()) {
-            remark += "；学生作答：" + req.getAnswerContent();
-        }
+        payload.put("message", remark);
         record.setRemark(remark);
         record.setStatus("FINISHED");
         record.setSubmitTime(now);
@@ -197,5 +206,20 @@ public class ExamService {
         int c = 0, idx = 0;
         while ((idx = text.indexOf(keyword, idx)) >= 0) { c++; idx += keyword.length(); }
         return c;
+    }
+
+    private Map<String, Object> readJson(String raw) {
+        if (raw == null || raw.isEmpty()) return new HashMap<>();
+        try {
+            return MAPPER.readValue(raw, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            return new HashMap<>();
+        }
+    }
+
+    private int num(Object v) {
+        if (v == null) return 0;
+        if (v instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(String.valueOf(v)); } catch (Exception e) { return 0; }
     }
 }

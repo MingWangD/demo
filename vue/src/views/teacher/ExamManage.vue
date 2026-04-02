@@ -21,6 +21,13 @@
         <el-table-column label="资格说明" prop="qualification.reason"/>
         <el-table-column label="成绩" prop="record.score"/>
         <el-table-column label="作答/判分说明" prop="record.remark"/>
+        <el-table-column label="主观题批改">
+          <template #default="scope">
+            <el-input v-model="scope.row._subjectiveScore" placeholder="主观分" style="width:90px;margin-right:6px"/>
+            <el-input v-model="scope.row._comment" placeholder="评语" style="width:130px;margin-right:6px"/>
+            <el-button size="small" type="primary" :disabled="!scope.row.record || !scope.row.qualification?.isQualified" @click="grade(scope.row)">提交</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
 
@@ -45,6 +52,7 @@
 import {computed, reactive, ref} from 'vue'
 import request from '@/utils/request'
 import { getQuestionBank } from '@/utils/questionBank'
+import { ElMessage } from 'element-plus'
 const courses = ref([])
 const list=ref([])
 const form=reactive({courseId:'',examName:'阶段考试',examTime:'2026-12-31T10:00:00',totalScore:0,durationMinutes:120,description:''})
@@ -60,6 +68,7 @@ const loadCourses = async()=>{
   if (!form.courseId && courses.value.length) form.courseId = String(courses.value[0].id)
 }
 const create=async()=>{
+  if (totalScore.value !== 100) return ElMessage.warning('发布考试前必须选满100分')
   form.description = picked.value.map((q, idx) => `${idx + 1}. ${q.title}（${q.score}分）`).join('\n')
   form.totalScore = totalScore.value || 100
   await request.post('/api/exam/create',{...form, courseId:Number(form.courseId)})
@@ -67,5 +76,9 @@ const create=async()=>{
 }
 const load=async()=>{const r=await request.get('/api/teacher/exam-manage',{params:{courseId:form.courseId}}); list.value=r.data||[]}
 const undo=async(examId)=>{await request.post('/api/exam/undo',null,{params:{examId}}); load()}
+const grade=async(row)=>{
+  await request.post('/api/teacher/exam-grade',null,{params:{recordId:row.record.id,subjectiveScore:row._subjectiveScore||0,comment:row._comment||''}})
+  load()
+}
 loadCourses().then(load)
 </script>
