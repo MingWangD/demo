@@ -20,5 +20,11 @@ public class ExamController {
     public Result create(@RequestBody Exam exam) { examService.create(exam, AuthContext.userId()); return Result.success(); }
 
     @PostMapping("/submit")
-    public Result submit(@RequestBody ExamSubmitRequest request) { examService.submit(request); return Result.success(); }
+    public Result submit(@RequestBody ExamSubmitRequest request) {
+        if ("STUDENT".equals(AuthContext.role())) {
+            request.setStudentId(AuthContext.userId());
+        }
+        examService.submit(request);
+        return Result.success();
+    }
 }
