@@ -2,9 +2,9 @@
   <div>
     <h3 style="margin:0 0 10px;color:#303133">学情总览</h3>
     <el-row :gutter="12">
-      <el-col :span="8"><div class="card metric"><div>GPA</div><h2>{{data.gpa || 0}}</h2><el-tag>{{data.gpaColor || 'GREEN'}}</el-tag></div></el-col>
-      <el-col :span="8"><div class="card metric"><div>风险等级</div><h2>{{data.riskLevel || 'LOW'}}</h2><div>概率 {{data.riskProbability || 0}}</div></div></el-col>
-      <el-col :span="8"><div class="card metric"><div>考试均分</div><h2>{{data.examAvgScore || 0}}</h2><div>出勤 {{data.attendanceCount || 0}}</div></div></el-col>
+      <el-col :span="8"><div class="card metric metric-gpa"><div>GPA</div><h2>{{data.gpa || 0}}</h2><el-tag>{{data.gpaColor || 'GREEN'}}</el-tag></div></el-col>
+      <el-col :span="8"><div class="card metric metric-risk"><div>风险等级</div><h2>{{data.riskLevel || 'LOW'}}</h2><div>概率 {{data.riskProbability || 0}}</div></div></el-col>
+      <el-col :span="8"><div class="card metric metric-exam"><div>考试均分</div><h2>{{data.examAvgScore || 0}}</h2><div>出勤 {{data.attendanceCount || 0}}</div></div></el-col>
     </el-row>
     <div class="card" style="margin-top:10px">
       <div style="font-weight:600;margin-bottom:6px">预警原因</div>
@@ -26,4 +26,8 @@ onMounted(async()=>{ const res=await request.get('/api/student/overview',{params
 </script>
 <style scoped>
 .metric h2{margin:8px 0;color:#303133}
+.metric{color:#fff;border-radius:12px}
+.metric-gpa{background:linear-gradient(135deg,#4facfe,#00f2fe)}
+.metric-risk{background:linear-gradient(135deg,#fa709a,#fee140)}
+.metric-exam{background:linear-gradient(135deg,#43e97b,#38f9d7)}
 </style>

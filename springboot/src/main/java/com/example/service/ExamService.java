@@ -136,6 +136,16 @@ public class ExamService {
         } else {
             examQualificationMapper.updateById(row);
         }
+
+        ExamRecord record = examRecordMapper.selectByExamAndStudent(examId, studentId);
+        if (!qualified && record != null) {
+            record.setScore(null);
+            record.setSubmitTime(null);
+            record.setStatus("NOT_JOINED");
+            record.setRemark("出勤未达标，成绩无效");
+            record.setUpdateTime(LocalDateTime.now());
+            examRecordMapper.updateById(record);
+        }
     }
 
     private void refreshAcademic(Long studentId) {
