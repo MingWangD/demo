@@ -50,22 +50,36 @@ public class ExamService {
         if (qualification == null || !Boolean.TRUE.equals(qualification.getIsQualified())) {
             throw new CustomException("无考试资格，后端拒绝提交");
         }
+        Exam exam = examMapper.selectById(req.getExamId());
         ExamRecord record = examRecordMapper.selectByExamAndStudent(req.getExamId(), req.getStudentId());
+        LocalDateTime now = LocalDateTime.now();
         if (record == null) {
             record = new ExamRecord();
             record.setExamId(req.getExamId());
             record.setStudentId(req.getStudentId());
-            record.setCreateTime(LocalDateTime.now());
-            examRecordMapper.insert(record);
+            record.setCreateTime(now);
         }
         record.setScore(req.getScore());
+        int objectiveCount = count(exam.getDescription(), "客观题");
+        int subjectiveCount = count(exam.getDescription(), "主观题");
+        BigDecimal autoScore = BigDecimal.valueOf(Math.min(objectiveCount * 2, 100));
+        record.setScore(autoScore);
+        String remark = "系统已自动判客观题得分：" + autoScore;
+        if (subjectiveCount > 0) remark += "，主观题待教师批改";
+        if (req.getAnswerContent() != null && !req.getAnswerContent().isEmpty()) {
+            remark += "；学生作答：" + req.getAnswerContent();
+        }
+        record.setRemark(remark);
         record.setStatus("FINISHED");
-        record.setSubmitTime(LocalDateTime.now());
-        record.setUpdateTime(LocalDateTime.now());
-        examRecordMapper.updateById(record);
+        record.setSubmitTime(now);
+        record.setUpdateTime(now);
+        if (record.getId() == null) {
+            examRecordMapper.insert(record);
+        } else {
+            examRecordMapper.updateById(record);
+        }
 
         refreshAcademic(req.getStudentId());
-        Exam exam = examMapper.selectById(req.getExamId());
         StudentFeature feature = featureExtractor.extractAndSave(req.getStudentId(), exam.getCourseId());
         riskPredictor.predictAndSave(feature);
     }
@@ -111,14 +125,27 @@ public class ExamService {
             row.setExamId(examId);
             row.setStudentId(studentId);
             row.setCreateTime(LocalDateTime.now());
-            examQualificationMapper.insert(row);
         }
         row.setAttendanceCount(attendanceCount);
         row.setRequiredCount(required);
         row.setQualificationRate(rate);
         row.setIsQualified(qualified);
         row.setReason(qualified ? "出勤达标，可参加考试" : "出勤未达标，暂不具备考试资格");
-        examQualificationMapper.updateById(row);
+        if (row.getId() == null) {
+            examQualificationMapper.insert(row);
+        } else {
+            examQualificationMapper.updateById(row);
+        }
+
+        ExamRecord record = examRecordMapper.selectByExamAndStudent(examId, studentId);
+        if (!qualified && record != null) {
+            record.setScore(null);
+            record.setSubmitTime(null);
+            record.setStatus("NOT_JOINED");
+            record.setRemark("出勤未达标，成绩无效");
+            record.setUpdateTime(LocalDateTime.now());
+            examRecordMapper.updateById(record);
+        }
     }
 
     private void refreshAcademic(Long studentId) {
@@ -151,5 +178,24 @@ public class ExamService {
         if (c == null || !teacherId.equals(c.getTeacherId())) {
             throw new CustomException("无权限操作该课程考试");
         }
+    }
+
+    public void undo(Long teacherId, Long examId) {
+        Exam exam = examMapper.selectById(examId);
+        validateCourseOwner(exam.getCourseId(), teacherId);
+        ExamQualification qq = new ExamQualification();
+        qq.setExamId(examId);
+        examQualificationMapper.selectAll(qq).stream().map(ExamQualification::getId).forEach(examQualificationMapper::deleteById);
+        ExamRecord rq = new ExamRecord();
+        rq.setExamId(examId);
+        examRecordMapper.selectAll(rq).stream().map(ExamRecord::getId).forEach(examRecordMapper::deleteById);
+        examMapper.deleteById(examId);
+    }
+
+    private int count(String text, String keyword) {
+        if (text == null || keyword == null || keyword.isEmpty()) return 0;
+        int c = 0, idx = 0;
+        while ((idx = text.indexOf(keyword, idx)) >= 0) { c++; idx += keyword.length(); }
+        return c;
     }
 }

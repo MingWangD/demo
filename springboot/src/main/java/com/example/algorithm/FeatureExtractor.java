@@ -56,7 +56,16 @@ public class FeatureExtractor {
                     .filter(s -> studentId.equals(s.getStudentId()) && homeworkIds.contains(s.getHomeworkId()))
                     .collect(Collectors.toList());
             submittedHomework = (int) submissions.stream().filter(s -> "SUBMITTED".equals(s.getStatus()) || "GRADED".equals(s.getStatus())).count();
-            List<BigDecimal> scores = submissions.stream().map(HomeworkSubmission::getScore).filter(v -> v != null).collect(Collectors.toList());
+            List<BigDecimal> scores = submissions.stream()
+                    .filter(s -> s.getScore() != null)
+                    .map(s -> {
+                        Homework hw = homeworkMapper.selectById(s.getHomeworkId());
+                        if (hw != null && hw.getTotalScore() != null && hw.getTotalScore().compareTo(BigDecimal.ZERO) > 0) {
+                            return s.getScore().multiply(new BigDecimal("100")).divide(hw.getTotalScore(), 2, RoundingMode.HALF_UP);
+                        }
+                        return s.getScore();
+                    })
+                    .collect(Collectors.toList());
             if (!scores.isEmpty()) {
                 homeworkAvg = BigDecimal.valueOf(scores.stream().mapToDouble(BigDecimal::doubleValue).average().orElse(0));
             }
