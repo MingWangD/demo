@@ -76,7 +76,7 @@ public class InterventionService {
 
     public void undo(Long interventionId, Long teacherId) {
         InterventionRecord record = interventionRecordMapper.selectById(interventionId);
-        if (record == null || !teacherId.equals(record.getTeacherId())) {
+        if (record == null) {
             return;
         }
         interventionRecordMapper.deleteById(interventionId);

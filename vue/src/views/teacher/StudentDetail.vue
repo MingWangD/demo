@@ -11,11 +11,24 @@
       <el-button type="primary" @click="load">查询</el-button>
     </div>
     <div class="card" style="margin-top:10px" v-if="data.student">
-      <p>学生：{{data.student.name}}</p>
-      <p>出勤：{{data.attendanceCount}}，作业提交率：{{data.homeworkSubmitRate}}，作业均分：{{data.homeworkAvgScore}}</p>
-      <p>考试均分：{{data.examAvgScore}}</p>
-      <p>GPA：{{data.academic?.gpa}} ({{data.academic?.gpaColor}})</p>
-      <p>最新风险：{{data.latestRisk?.riskProbability}} / {{data.latestRisk?.riskLevel}} / {{data.latestRisk?.mainReason}}</p>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h4 style="margin:0">{{data.student.name}} 的学情画像</h4>
+        <el-tag type="danger">风险：{{data.latestRisk?.riskLevel || 'LOW'}}</el-tag>
+      </div>
+      <el-row :gutter="12" style="margin-top:10px">
+        <el-col :span="6"><div class="card">出勤次数<br><b>{{data.attendanceCount || 0}}</b></div></el-col>
+        <el-col :span="6"><div class="card">作业提交率<br><b>{{Number((data.homeworkSubmitRate||0)*100).toFixed(2)}}%</b></div></el-col>
+        <el-col :span="6"><div class="card">作业均分<br><b>{{data.homeworkAvgScore || 0}}</b></div></el-col>
+        <el-col :span="6"><div class="card">考试均分<br><b>{{data.examAvgScore || 0}}</b></div></el-col>
+      </el-row>
+      <div class="card" style="margin-top:10px">
+        GPA：<b>{{data.academic?.gpa || 0}}</b>
+        <el-tag style="margin-left:8px">{{data.academic?.gpaColor || 'GREEN'}}</el-tag>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div style="font-weight:600;margin-bottom:6px">最新风险原因</div>
+        <div style="color:#606266">{{data.latestRisk?.mainReason || '学习状态稳定'}}</div>
+      </div>
     </div>
   </div>
 </template>
