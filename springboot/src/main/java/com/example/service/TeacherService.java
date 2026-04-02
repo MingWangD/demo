@@ -22,6 +22,7 @@ public class TeacherService {
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
     @Resource private ExamMapper examMapper;
     @Resource private ExamRecordMapper examRecordMapper;
+    @Resource private ExamMapper examMapper;
     @Resource private ExamService examService;
 
     public List<Course> courseList(Long teacherId) {
