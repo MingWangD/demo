@@ -6,6 +6,7 @@ import com.example.mapper.*;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,8 +61,20 @@ public class TeacherService {
     public List<Map<String, Object>> highRisk(Long teacherId, Long courseId, String riskLevel, String gpaColor) {
         if (courseId != null) validateCourseOwner(courseId, teacherId);
         Set<Long> allowedCourseIds = courseList(teacherId).stream().map(Course::getId).collect(Collectors.toSet());
-        List<RiskPrediction> list = riskPredictionMapper.selectAll(new RiskPrediction());
-        return list.stream()
+        List<RiskPrediction> latestOnly = riskPredictionMapper.selectAll(new RiskPrediction()).stream()
+                .collect(Collectors.toMap(
+                        r -> r.getStudentId() + "_" + (r.getCourseId() == null ? "null" : r.getCourseId()),
+                        r -> r,
+                        (a, b) -> {
+                            LocalDateTime at = a.getPredictTime() == null ? a.getCreateTime() : a.getPredictTime();
+                            LocalDateTime bt = b.getPredictTime() == null ? b.getCreateTime() : b.getPredictTime();
+                            if (at == null) return b;
+                            if (bt == null) return a;
+                            return bt.isAfter(at) ? b : a;
+                        }
+                ))
+                .values().stream().toList();
+        return latestOnly.stream()
                 .filter(r -> r.getCourseId() == null || allowedCourseIds.contains(r.getCourseId()))
                 .filter(r -> courseId == null || courseId.equals(r.getCourseId()))
                 .filter(r -> riskLevel == null || riskLevel.isEmpty() || riskLevel.equals(r.getRiskLevel()))

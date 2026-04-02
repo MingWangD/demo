@@ -51,18 +51,22 @@ public class ExamService {
             throw new CustomException("无考试资格，后端拒绝提交");
         }
         ExamRecord record = examRecordMapper.selectByExamAndStudent(req.getExamId(), req.getStudentId());
+        LocalDateTime now = LocalDateTime.now();
         if (record == null) {
             record = new ExamRecord();
             record.setExamId(req.getExamId());
             record.setStudentId(req.getStudentId());
-            record.setCreateTime(LocalDateTime.now());
-            examRecordMapper.insert(record);
+            record.setCreateTime(now);
         }
         record.setScore(req.getScore());
         record.setStatus("FINISHED");
-        record.setSubmitTime(LocalDateTime.now());
-        record.setUpdateTime(LocalDateTime.now());
-        examRecordMapper.updateById(record);
+        record.setSubmitTime(now);
+        record.setUpdateTime(now);
+        if (record.getId() == null) {
+            examRecordMapper.insert(record);
+        } else {
+            examRecordMapper.updateById(record);
+        }
 
         refreshAcademic(req.getStudentId());
         Exam exam = examMapper.selectById(req.getExamId());
@@ -111,14 +115,17 @@ public class ExamService {
             row.setExamId(examId);
             row.setStudentId(studentId);
             row.setCreateTime(LocalDateTime.now());
-            examQualificationMapper.insert(row);
         }
         row.setAttendanceCount(attendanceCount);
         row.setRequiredCount(required);
         row.setQualificationRate(rate);
         row.setIsQualified(qualified);
         row.setReason(qualified ? "出勤达标，可参加考试" : "出勤未达标，暂不具备考试资格");
-        examQualificationMapper.updateById(row);
+        if (row.getId() == null) {
+            examQualificationMapper.insert(row);
+        } else {
+            examQualificationMapper.updateById(row);
+        }
     }
 
     private void refreshAcademic(Long studentId) {

@@ -40,18 +40,22 @@ public class HomeworkService {
 
     public void submit(HomeworkSubmitRequest req) {
         HomeworkSubmission old = homeworkSubmissionMapper.selectByHomeworkAndStudent(req.getHomeworkId(), req.getStudentId());
+        LocalDateTime now = LocalDateTime.now();
         if (old == null) {
             old = new HomeworkSubmission();
             old.setHomeworkId(req.getHomeworkId());
             old.setStudentId(req.getStudentId());
-            old.setCreateTime(LocalDateTime.now());
-            homeworkSubmissionMapper.insert(old);
+            old.setCreateTime(now);
         }
         old.setSubmitContent(req.getSubmitContent());
-        old.setSubmitTime(LocalDateTime.now());
+        old.setSubmitTime(now);
         old.setStatus("SUBMITTED");
-        old.setUpdateTime(LocalDateTime.now());
-        homeworkSubmissionMapper.updateById(old);
+        old.setUpdateTime(now);
+        if (old.getId() == null) {
+            homeworkSubmissionMapper.insert(old);
+        } else {
+            homeworkSubmissionMapper.updateById(old);
+        }
 
         Homework hw = homeworkMapper.selectById(req.getHomeworkId());
         StudentFeature feature = featureExtractor.extractAndSave(req.getStudentId(), hw.getCourseId());
