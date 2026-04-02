@@ -53,6 +53,7 @@ public class HomeworkService {
             old.setHomeworkId(req.getHomeworkId());
             old.setStudentId(req.getStudentId());
             old.setCreateTime(now);
+            old.setIsLate(false);
         }
         java.util.Map<String, Object> incoming = readJson(req.getSubmitContent());
         java.util.Map<String, Object> existing = readJson(old.getSubmitContent());
@@ -69,6 +70,7 @@ public class HomeworkService {
         old.setSubmitContent(writeJson(payload));
         old.setSubmitTime(now);
         old.setStatus("SUBMITTED");
+        if (old.getIsLate() == null) old.setIsLate(false);
         Homework hw = homeworkMapper.selectById(req.getHomeworkId());
         int subjectiveCount = count(hw.getContent(), "主观题");
         java.math.BigDecimal autoScore = java.math.BigDecimal.valueOf(Math.min(objectiveScoreInt, 100));

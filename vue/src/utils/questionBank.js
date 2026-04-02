@@ -1,24 +1,73 @@
-const buildSubjectBank = (subject) => {
-  const objective = Array.from({ length: 30 }).map((_, i) => ({
-    id: `${subject}-O-${i + 1}`,
-    type: 'OBJECTIVE',
-    score: 2,
-    title: `【${subject}客观题${i + 1}】请完成本题并选择最优答案。`
+const buildQuestions = (questions, type, score, subject) =>
+  questions.map((title, i) => ({
+    id: `${subject}-${type}-${i + 1}`,
+    type,
+    score,
+    title
   }))
-  const subjective = Array.from({ length: 20 }).map((_, i) => ({
-    id: `${subject}-S-${i + 1}`,
-    type: 'SUBJECTIVE',
-    score: 10,
-    title: `【${subject}主观题${i + 1}】请结合课程知识进行分析与作答。`
-  }))
-  return [...objective, ...subjective]
-}
 
 const COURSE_BANK = {
-  '201': buildSubjectBank('数据结构'),
-  '202': buildSubjectBank('数据库原理'),
-  '203': buildSubjectBank('机器学习导论'),
-  default: buildSubjectBank('通用课程')
+  '201': [
+    ...buildQuestions([
+      '在单链表中，已知头指针，删除某节点的前驱节点最适合采用哪种遍历策略？',
+      '顺序栈在连续入栈后再连续出栈，最核心的数据结构特征是什么？',
+      '循环队列判满条件通常如何设计，才能避免与判空条件冲突？',
+      '二叉搜索树中查找关键字 42 时，比较方向由哪个性质决定？',
+      '哈希表采用链地址法时，影响查询性能最直接的因素是什么？',
+      '图的广度优先遍历通常借助哪一种线性结构实现？'
+    ], 'OBJECTIVE', 2, 'DS'),
+    ...buildQuestions([
+      '请给出快速排序的核心步骤，并分析其平均时间复杂度与最坏情况。',
+      '请设计一个“浏览器前进后退”功能的数据结构方案，并说明原因。',
+      '请比较邻接矩阵与邻接表在稀疏图场景下的空间差异。',
+      '请说明红黑树通过哪些约束保证插入删除后的平衡性。'
+    ], 'SUBJECTIVE', 10, 'DS')
+  ],
+  '202': [
+    ...buildQuestions([
+      '事务的隔离性主要用于解决并发访问中的哪类问题？',
+      '关系数据库中，主键列是否允许出现 NULL 值？',
+      '在 B+Tree 索引中，叶子节点通常存放哪些信息？',
+      '第三范式（3NF）重点减少的是哪一类数据冗余？',
+      'LEFT JOIN 的结果集一定会完整保留哪一侧表记录？',
+      '执行 `GROUP BY` 后再 `HAVING` 的主要用途是什么？'
+    ], 'OBJECTIVE', 2, 'DB'),
+    ...buildQuestions([
+      '请为“学生-课程-选课成绩”场景设计 ER 模型，并标注主外键。',
+      '请写出一条包含连接与分组统计的 SQL，并解释执行顺序。',
+      '某查询响应慢，请从索引、SQL 写法和表结构给出三条优化建议。',
+      '请结合脏读、不可重复读、幻读说明四种隔离级别差异。'
+    ], 'SUBJECTIVE', 10, 'DB')
+  ],
+  '203': [
+    ...buildQuestions([
+      '逻辑回归模型输出值经过 Sigmoid 映射后，范围处于哪个区间？',
+      '二分类任务中，常把哪个阈值作为默认类别划分起点？',
+      '训练集与测试集拆分的主要目的是什么？',
+      '当模型出现过拟合时，优先考虑加入哪类约束手段？',
+      '梯度下降迭代时，学习率过大最可能导致什么现象？',
+      '特征标准化通常有助于改进哪一类训练过程表现？'
+    ], 'OBJECTIVE', 2, 'ML'),
+    ...buildQuestions([
+      '请推导逻辑回归的损失函数形式，并说明其可优化性。',
+      '请比较准确率、召回率、F1 在不同业务场景下的适用性。',
+      '请给出一个防止数据泄漏的机器学习建模流程。',
+      '请说明 L1 与 L2 正则化在特征选择方面的差异。'
+    ], 'SUBJECTIVE', 10, 'ML')
+  ],
+  default: [
+    ...buildQuestions([
+      '面对多种可行方案时，优先级排序通常依据什么标准？',
+      '流程设计中，为避免返工最应先明确哪项输入信息？',
+      '当指标异常波动时，第一步分析动作通常是什么？',
+      '在资源受限情况下，任务排期应优先满足哪类约束？'
+    ], 'OBJECTIVE', 2, 'GEN'),
+    ...buildQuestions([
+      '请结合案例描述一个完整的问题定位与闭环改进过程。',
+      '请从目标、路径、评估三方面设计一份执行方案。',
+      '请分析一次项目延期的根因，并给出预防措施。'
+    ], 'SUBJECTIVE', 10, 'GEN')
+  ]
 }
 
 export const getQuestionBank = (courseId) => COURSE_BANK[String(courseId)] || COURSE_BANK.default

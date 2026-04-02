@@ -2,7 +2,7 @@
 <script setup>
 import * as echarts from 'echarts'
 import {onMounted, onBeforeUnmount, ref, watch} from 'vue'
-const props = defineProps({ title: String, xData: Array, yData: Array })
+const props = defineProps({ title: String, xData: Array, yData: Array, unit: String })
 const el = ref(); let chart
 const render = () => {
   if (!el.value) return
@@ -11,7 +11,7 @@ const render = () => {
     title: { text: props.title || '' },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: props.xData || [] },
-    yAxis: { type: 'value' },
+    yAxis: { type: 'value', axisLabel: props.unit ? { formatter: `{value}${props.unit}` } : {} },
     series: [{ type: 'line', data: props.yData || [], smooth: true, areaStyle: {} }]
   })
 }

@@ -7,7 +7,7 @@
       <el-table-column prop="homework.title" label="作业"/>
       <el-table-column label="状态">
         <template #default="scope">
-          {{ scope.row.submission?.status || '未提交' }}
+          {{ statusLabel(scope.row.submission?.status) }}
         </template>
       </el-table-column>
       <el-table-column label="提交">
@@ -18,13 +18,12 @@
     <el-dialog v-model="showDialog" title="作业作答" width="760px">
       <div v-if="current">
         <h4>{{current.homework.title}}</h4>
-        <div v-for="(q, idx) in objectiveQuestions" :key="idx" style="margin-bottom:8px">
+        <div v-for="(q, idx) in objectiveQuestions" :key="idx" style="margin-bottom:12px">
           <div>{{idx + 1}}. {{q}}</div>
           <el-radio-group v-model="objectiveAnswers[idx]" :disabled="objectiveLocked">
-            <el-radio label="A">A</el-radio>
-            <el-radio label="B">B</el-radio>
-            <el-radio label="C">C</el-radio>
-            <el-radio label="D">D</el-radio>
+            <el-radio v-for="opt in objectiveOptions[idx] || []" :key="opt.key" :label="opt.key">
+              {{opt.key}}. {{opt.text}}
+            </el-radio>
           </el-radio-group>
         </div>
         <div style="margin-top:10px">
@@ -48,17 +47,53 @@ const courses = ref([]); const courseId = ref(); const list = ref([])
 const showDialog = ref(false)
 const current = ref(null)
 const objectiveQuestions = ref([])
+const objectiveOptions = ref([])
 const objectiveAnswers = ref([])
 const subjectiveAnswer = ref('')
 const objectiveLocked = ref(false)
-const parseQuestions = (content='') => content.split('\\n').filter(i => i.includes('客观题'))
-const parseSubjective = (content='') => content.split('\\n').find(i => i.includes('主观题')) || ''
+const normalize = (content='') => String(content).replace(/\\\\n/g, '\n')
+const parseLines = (content='') => normalize(content).split('\n').map(i => i.trim()).filter(Boolean)
+const parseQuestions = (content='') => {
+  const lines = parseLines(content)
+  const objective = lines.filter(i => /客观题|选择题|单选题/.test(i))
+  if (objective.length) return objective
+  return lines.filter(i => !i.includes('主观题') && !i.includes('简答题'))
+}
+const parseSubjective = (content='') => parseLines(content).find(i => i.includes('主观题') || i.includes('简答题')) || ''
 const parseSubmission = (text) => { try { return JSON.parse(text || '{}') } catch { return {} } }
+const OPTION_POOL = [
+  '时间复杂度更低', '空间开销最小', '鲁棒性更强', '可维护性更高', '便于并行处理', '更符合题干约束',
+  '边界条件更完整', '结果更稳定', '实现成本更低', '可解释性更好', '与业务目标一致', '满足数据规模要求'
+]
+const pickDistinctOptions = (seed) => {
+  const used = new Set()
+  const options = []
+  let cursor = (seed * 7) % OPTION_POOL.length
+  while (options.length < 4) {
+    const text = OPTION_POOL[cursor % OPTION_POOL.length]
+    if (!used.has(text)) {
+      used.add(text)
+      options.push(text)
+    }
+    cursor += 3
+  }
+  return options
+}
+const buildObjectiveOptions = (questions=[]) => questions.map((_, idx) => {
+  const texts = pickDistinctOptions(idx + 1)
+  return ['A', 'B', 'C', 'D'].map((key, i) => ({ key, text: texts[i] }))
+})
+const statusLabel = (status) => {
+  if (status === 'SUBMITTED') return '已提交'
+  if (status === 'GRADED') return '已批改'
+  return '未提交'
+}
 const loadCourses = async()=>{const r=await request.get('/api/student/courses',{params:{studentId:user.userId||user.id}}); courses.value=r.data||[]; if(courses.value.length){courseId.value=courses.value[0].id; load()}}
 const load = async()=>{ const r=await request.get('/api/student/homework',{params:{studentId:user.userId||user.id,courseId:courseId.value}}); list.value=r.data||[] }
 const openSubmit = (row) => {
   current.value = row
   objectiveQuestions.value = parseQuestions(row.homework.content || '')
+  objectiveOptions.value = buildObjectiveOptions(objectiveQuestions.value)
   const existing = parseSubmission(row.submission?.submitContent)
   objectiveAnswers.value = existing.objectiveDetail || Array(objectiveQuestions.value.length).fill('')
   objectiveLocked.value = !!existing.objectiveLocked

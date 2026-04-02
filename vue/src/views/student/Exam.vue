@@ -50,11 +50,12 @@ const current = ref(null)
 const objectiveQuestions = ref([])
 const objectiveAnswers = ref([])
 const subjectiveAnswer = ref('')
+const normalize = (content='') => String(content).replace(/\\\\n/g, '\n')
 const loadCourses = async()=>{const r=await request.get('/api/student/courses',{params:{studentId:user.userId||user.id}}); courses.value=r.data||[]; if(courses.value.length){courseId.value=courses.value[0].id; load()}}
 const load = async()=>{ const r=await request.get('/api/student/exams',{params:{studentId:user.userId||user.id,courseId:courseId.value}}); list.value=r.data||[] }
 const openSubmit = (row)=>{
   current.value = row
-  objectiveQuestions.value = String(row.description || '').split('\\n').filter(i => i.includes('客观题'))
+  objectiveQuestions.value = normalize(row.description || '').split('\n').filter(i => i.includes('客观题'))
   objectiveAnswers.value = Array(objectiveQuestions.value.length).fill('')
   subjectiveAnswer.value = ''
   showDialog.value = true
