@@ -2,6 +2,7 @@ package com.example.controller;
 
 import com.example.common.Result;
 import com.example.dto.InterventionCreateRequest;
+import com.example.security.AuthContext;
 import com.example.service.InterventionService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -12,10 +13,24 @@ public class InterventionController {
     @Resource private InterventionService interventionService;
 
     @PostMapping("/add")
-    public Result add(@RequestBody InterventionCreateRequest request) { interventionService.add(request); return Result.success(); }
+    public Result add(@RequestBody InterventionCreateRequest request) {
+        interventionService.add(request, AuthContext.userId());
+        return Result.success();
+    }
 
     @GetMapping("/list")
     public Result list(@RequestParam(required = false) Long studentId, @RequestParam(required = false) Long courseId) {
         return Result.success(interventionService.list(studentId, courseId));
+    }
+
+    @GetMapping("/options")
+    public Result options() {
+        return Result.success(interventionService.warningOptions(AuthContext.userId()));
+    }
+
+    @PostMapping("/undo")
+    public Result undo(@RequestParam Long interventionId) {
+        interventionService.undo(interventionId, AuthContext.userId());
+        return Result.success();
     }
 }

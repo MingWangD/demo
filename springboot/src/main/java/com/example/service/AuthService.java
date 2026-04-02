@@ -16,6 +16,7 @@ import com.example.security.JwtUtils;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,13 +39,22 @@ public class AuthService {
             query.setStudentId(user.getId());
             List<StudentCourse> courses = studentCourseMapper.selectAll(query);
             for (StudentCourse c : courses) {
-                StudentAttendance attendance = new StudentAttendance();
-                attendance.setStudentId(user.getId());
-                attendance.setCourseId(c.getCourseId());
-                attendance.setAttendanceType("LOGIN");
-                attendance.setAttendanceTime(LocalDateTime.now());
-                attendance.setRemark("登录自动记录");
-                studentAttendanceMapper.insert(attendance);
+                StudentAttendance attendanceQuery = new StudentAttendance();
+                attendanceQuery.setStudentId(user.getId());
+                attendanceQuery.setCourseId(c.getCourseId());
+                boolean alreadyLoggedToday = studentAttendanceMapper.selectAll(attendanceQuery).stream()
+                        .anyMatch(a -> "LOGIN".equals(a.getAttendanceType())
+                                && a.getAttendanceTime() != null
+                                && LocalDate.now().equals(a.getAttendanceTime().toLocalDate()));
+                if (!alreadyLoggedToday) {
+                    StudentAttendance attendance = new StudentAttendance();
+                    attendance.setStudentId(user.getId());
+                    attendance.setCourseId(c.getCourseId());
+                    attendance.setAttendanceType("LOGIN");
+                    attendance.setAttendanceTime(LocalDateTime.now());
+                    attendance.setRemark("登录自动记录");
+                    studentAttendanceMapper.insert(attendance);
+                }
 
                 StudentFeature feature = featureExtractor.extractAndSave(user.getId(), c.getCourseId());
                 riskPredictor.predictAndSave(feature);

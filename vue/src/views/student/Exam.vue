@@ -7,19 +7,69 @@
       <el-table-column prop="examName" label="考试"/>
       <el-table-column prop="isQualified" label="资格"/>
       <el-table-column prop="qualificationReason" label="说明"/>
+      <el-table-column prop="status" label="状态"/>
+      <el-table-column prop="score" label="当前得分"/>
+      <el-table-column prop="autoJudgeRemark" label="判分说明"/>
       <el-table-column label="参加">
-        <template #default="scope"><el-button :disabled="!scope.row.isQualified" @click="submit(scope.row.examId)">提交</el-button></template>
+        <template #default="scope"><el-button :disabled="!scope.row.isQualified || scope.row.status==='FINISHED'" @click="openSubmit(scope.row)">完成考试</el-button></template>
       </el-table-column>
     </el-table>
+
+    <el-dialog v-model="showDialog" title="考试作答" width="760px">
+      <div v-if="current">
+        <h4>{{current.examName}}</h4>
+        <div v-for="(q, idx) in objectiveQuestions" :key="idx" style="margin-bottom:8px">
+          <div>{{idx + 1}}. {{q}}</div>
+          <el-radio-group v-model="objectiveAnswers[idx]">
+            <el-radio label="A">A</el-radio>
+            <el-radio label="B">B</el-radio>
+            <el-radio label="C">C</el-radio>
+            <el-radio label="D">D</el-radio>
+          </el-radio-group>
+        </div>
+        <div style="margin-top:10px">
+          <div style="font-weight:600">主观题作答</div>
+          <el-input v-model="subjectiveAnswer" type="textarea" :rows="4" placeholder="请输入主观题答案"/>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showDialog=false">取消</el-button>
+        <el-button type="primary" @click="submit">提交考试</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 <script setup>
 import {onMounted,ref} from 'vue'
 import request from '@/utils/request'
+import { ElMessageBox } from 'element-plus'
 const user = JSON.parse(localStorage.getItem('system-user')||'{}')
 const courses = ref([]); const courseId = ref(); const list = ref([])
+const showDialog = ref(false)
+const current = ref(null)
+const objectiveQuestions = ref([])
+const objectiveAnswers = ref([])
+const subjectiveAnswer = ref('')
 const loadCourses = async()=>{const r=await request.get('/api/student/courses',{params:{studentId:user.userId||user.id}}); courses.value=r.data||[]; if(courses.value.length){courseId.value=courses.value[0].id; load()}}
 const load = async()=>{ const r=await request.get('/api/student/exams',{params:{studentId:user.userId||user.id,courseId:courseId.value}}); list.value=r.data||[] }
-const submit = async(examId)=>{ await request.post('/api/exam/submit',{examId,studentId:user.userId||user.id,score:80}); load() }
+const openSubmit = (row)=>{
+  current.value = row
+  objectiveQuestions.value = String(row.description || '').split('\\n').filter(i => i.includes('客观题'))
+  objectiveAnswers.value = Array(objectiveQuestions.value.length).fill('')
+  subjectiveAnswer.value = ''
+  showDialog.value = true
+}
+const submit = async()=>{
+  await ElMessageBox.confirm('考试提交后客观题与主观题均不可修改，确定提交吗？', '提交确认', { type:'warning' })
+  const objectiveAnswered = objectiveAnswers.value.filter(Boolean).length
+  await request.post('/api/exam/submit',{
+    examId:current.value.examId,
+    studentId:user.userId||user.id,
+    score:80,
+    answerContent:JSON.stringify({ objectiveAnswered, objectiveDetail: objectiveAnswers.value, subjectiveAnswer: subjectiveAnswer.value, objectiveLocked:true })
+  })
+  showDialog.value = false
+  load()
+}
 onMounted(loadCourses)
 </script>
