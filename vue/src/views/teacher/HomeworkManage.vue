@@ -31,13 +31,6 @@
             <el-button size="small" @click="goDetail(scope.row)">本次作业</el-button>
           </template>
         </el-table-column>
-        <el-table-column label="评分">
-          <template #default="scope">
-            <el-input v-model="scope.row._score" placeholder="分数" style="width:70px;margin-right:6px"/>
-            <el-input v-model="scope.row._comment" placeholder="评语" style="width:120px;margin-right:6px"/>
-            <el-button size="small" type="primary" @click="grade(scope.row)">提交</el-button>
-          </template>
-        </el-table-column>
       </el-table>
     </div>
 
@@ -88,7 +81,6 @@ const create=async()=>{
   load()
 }
 const load=async()=>{const r=await request.get('/api/teacher/homework-manage',{params:{courseId:form.courseId}}); list.value=r.data||[]}
-const grade=async(row)=>{await request.post('/api/teacher/homework-grade',null,{params:{submissionId:row.id,score:row._score||row.score||0,comment:row._comment||''}}); load()}
 const undo=async(homeworkId)=>{await request.post('/api/homework/undo',null,{params:{homeworkId}}); load()}
 const shortAnswer=(raw='')=>{
   try {

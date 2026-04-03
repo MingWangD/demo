@@ -205,7 +205,9 @@ public class TeacherService {
         res.put("submission", sub);
         res.put("homework", hw);
         res.put("student", sysUserMapper.selectById(sub.getStudentId()));
-        res.put("objectiveQuestions", parseQuestions(hw.getContent(), 2));
+        List<String> objectiveQuestions = parseQuestions(hw.getContent(), 2);
+        res.put("objectiveQuestions", objectiveQuestions);
+        res.put("objectiveCorrectAnswers", parseObjectiveCorrectAnswers(objectiveQuestions));
         res.put("subjectiveQuestions", parseQuestions(hw.getContent(), 10));
         res.put("objectiveAnswers", list(payload.get("objectiveDetail")));
         res.put("subjectiveAnswers", list(payload.get("subjectiveAnswers")));
@@ -244,7 +246,9 @@ public class TeacherService {
         res.put("record", record);
         res.put("exam", exam);
         res.put("student", sysUserMapper.selectById(record.getStudentId()));
-        res.put("objectiveQuestions", parseQuestions(exam.getDescription(), 2));
+        List<String> objectiveQuestions = parseQuestions(exam.getDescription(), 2);
+        res.put("objectiveQuestions", objectiveQuestions);
+        res.put("objectiveCorrectAnswers", parseObjectiveCorrectAnswers(objectiveQuestions));
         res.put("subjectiveQuestions", parseQuestions(exam.getDescription(), 10));
         res.put("objectiveAnswers", list(payload.get("objectiveDetail")));
         res.put("subjectiveAnswers", list(payload.get("subjectiveAnswers")));
@@ -286,6 +290,17 @@ public class TeacherService {
                 .filter(s -> !s.isEmpty())
                 .filter(s -> s.contains("（" + score + "分）") || s.contains("(" + score + "分)"))
                 .toList();
+    }
+
+    private List<String> parseObjectiveCorrectAnswers(List<String> questions) {
+        if (questions == null) return List.of();
+        List<String> fallback = List.of("A", "B", "C", "D");
+        return questions.stream().map(q -> {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("答案\\s*[：:]\\s*([A-D])", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(q);
+            if (m.find()) return m.group(1).toUpperCase();
+            int idx = Math.abs(q.hashCode()) % fallback.size();
+            return fallback.get(idx);
+        }).toList();
     }
 
     private Map<String, Object> readJson(String raw) {

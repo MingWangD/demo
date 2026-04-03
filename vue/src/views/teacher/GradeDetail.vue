@@ -7,7 +7,13 @@
       <el-table :data="objectiveRows" style="margin-bottom:10px">
         <el-table-column prop="index" label="#" width="60"/>
         <el-table-column prop="question" label="客观题"/>
-        <el-table-column prop="answer" label="学生答案" width="180"/>
+        <el-table-column prop="correctAnswer" label="正确答案" width="120"/>
+        <el-table-column label="学生答案" width="180">
+          <template #default="scope">
+            <span>{{ scope.row.answer }}</span>
+            <span style="color:#f56c6c;margin-left:8px;font-weight:700">{{ scope.row.isCorrect ? '✓' : '✗' }}</span>
+          </template>
+        </el-table-column>
       </el-table>
       <el-table :data="subjectiveRows">
         <el-table-column prop="index" label="#" width="60"/>
@@ -31,7 +37,13 @@
       <el-table :data="objectiveRows" style="margin-bottom:10px">
         <el-table-column prop="index" label="#" width="60"/>
         <el-table-column prop="question" label="客观题"/>
-        <el-table-column prop="answer" label="学生答案" width="180"/>
+        <el-table-column prop="correctAnswer" label="正确答案" width="120"/>
+        <el-table-column label="学生答案" width="180">
+          <template #default="scope">
+            <span>{{ scope.row.answer }}</span>
+            <span style="color:#f56c6c;margin-left:8px;font-weight:700">{{ scope.row.isCorrect ? '✓' : '✗' }}</span>
+          </template>
+        </el-table-column>
       </el-table>
       <el-table :data="subjectiveRows">
         <el-table-column prop="index" label="#" width="60"/>
@@ -68,7 +80,18 @@ const comment = ref('')
 const objectiveRows = computed(() => {
   const q = data.value.objectiveQuestions || []
   const a = data.value.objectiveAnswers || []
-  return q.map((question, i) => ({ index: i + 1, question, answer: a[i] || '-' }))
+  const c = data.value.objectiveCorrectAnswers || []
+  return q.map((question, i) => {
+    const answer = String(a[i] || '-')
+    const correctAnswer = String(c[i] || '-')
+    return {
+      index: i + 1,
+      question,
+      answer,
+      correctAnswer,
+      isCorrect: answer !== '-' && correctAnswer !== '-' && answer.toUpperCase() === correctAnswer.toUpperCase()
+    }
+  })
 })
 
 const subjectiveRows = computed(() => {
