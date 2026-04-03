@@ -43,9 +43,17 @@ public class JwtInterceptor implements HandlerInterceptor {
             write401(response, "无教师端权限");
             return false;
         }
-        if ((uri.startsWith("/api/homework/create") || uri.startsWith("/api/exam/create") || uri.startsWith("/api/dashboard") || uri.startsWith("/api/intervention")) && !"TEACHER".equals(role)) {
+        if ((uri.startsWith("/api/homework/create") || uri.startsWith("/api/exam/create") || uri.startsWith("/api/dashboard")) && !"TEACHER".equals(role)) {
             write401(response, "无教师操作权限");
             return false;
+        }
+        if (uri.startsWith("/api/intervention")) {
+            boolean studentCanReadOwnList = "STUDENT".equals(role) && uri.startsWith("/api/intervention/list");
+            boolean teacherAllowed = "TEACHER".equals(role);
+            if (!teacherAllowed && !studentCanReadOwnList) {
+                write401(response, "无教师操作权限");
+                return false;
+            }
         }
         return true;
     }

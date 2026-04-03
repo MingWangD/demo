@@ -3,6 +3,12 @@
     <div class="login-box">
       <div style="font-weight: bold; font-size: 30px; text-align: center; margin-bottom: 30px; color: #1967e3">学情智能预警系统</div>
       <el-form :model="data.form"  ref="formRef" :rules="data.rules">
+        <el-form-item prop="role">
+          <el-radio-group v-model="data.form.role">
+            <el-radio label="STUDENT">学生端登录</el-radio>
+            <el-radio label="TEACHER">教师端登录</el-radio>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item prop="username">
           <el-input :prefix-icon="User" size="large" v-model="data.form.username" placeholder="请输入账号" />
         </el-form-item>
@@ -25,8 +31,11 @@
   import router from "@/router";
 
   const data = reactive({
-    form: {},
+    form: {
+      role: 'STUDENT'
+    },
     rules: {
+      role: [{ required: true, message: '请选择登录身份', trigger: 'change' }],
       username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
       password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
     }
