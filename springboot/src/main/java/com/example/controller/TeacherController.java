@@ -54,4 +54,30 @@ public class TeacherController {
         teacherService.gradeExam(AuthContext.userId(), recordId, subjectiveScore, comment);
         return Result.success();
     }
+
+    @GetMapping("/homework-submission-detail")
+    public Result homeworkSubmissionDetail(@RequestParam Long submissionId) {
+        return Result.success(teacherService.homeworkSubmissionDetail(AuthContext.userId(), submissionId));
+    }
+
+    @PostMapping("/homework-grade-detail")
+    public Result homeworkGradeDetail(@RequestParam Long submissionId,
+                                      @RequestParam String questionScores,
+                                      @RequestParam(required = false) String comment) {
+        teacherService.gradeHomeworkByQuestion(AuthContext.userId(), submissionId, questionScores, comment);
+        return Result.success();
+    }
+
+    @GetMapping("/exam-record-detail")
+    public Result examRecordDetail(@RequestParam Long recordId) {
+        return Result.success(teacherService.examRecordDetail(AuthContext.userId(), recordId));
+    }
+
+    @PostMapping("/exam-grade-detail")
+    public Result examGradeDetail(@RequestParam Long recordId,
+                                  @RequestParam String questionScores,
+                                  @RequestParam(required = false) String comment) {
+        teacherService.gradeExamByQuestion(AuthContext.userId(), recordId, questionScores, comment);
+        return Result.success();
+    }
 }

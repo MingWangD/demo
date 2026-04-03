@@ -21,6 +21,7 @@ const router = createRouter({
         { path: 'teacher-high-risk', component: () => import('@/views/teacher/HighRisk.vue')},
         { path: 'teacher-student-detail', component: () => import('@/views/teacher/StudentDetail.vue')},
         { path: 'teacher-intervention', component: () => import('@/views/teacher/Intervention.vue')},
+        { path: 'teacher-grade-detail', component: () => import('@/views/teacher/GradeDetail.vue')},
       ]
     },
     { path: '/login', component: () => import('@/views/Login.vue') }
