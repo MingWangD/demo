@@ -20,7 +20,16 @@
         <el-table-column label="资格" prop="qualification.isQualified"/>
         <el-table-column label="资格说明" prop="qualification.reason"/>
         <el-table-column label="成绩" prop="record.score"/>
-        <el-table-column label="作答/判分说明" prop="record.remark"/>
+        <el-table-column label="作答/判分说明">
+          <template #default="scope">
+            {{ parseRemark(scope.row.record?.remark) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="详情" width="110">
+          <template #default="scope">
+            <el-button size="small" :disabled="!scope.row.record" @click="goDetail(scope.row)">本次考试</el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="主观题批改">
           <template #default="scope">
             <el-input v-model="scope.row._subjectiveScore" placeholder="主观分" style="width:90px;margin-right:6px"/>
@@ -53,6 +62,8 @@ import {computed, reactive, ref} from 'vue'
 import request from '@/utils/request'
 import { getQuestionBank } from '@/utils/questionBank'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 const courses = ref([])
 const list=ref([])
 const form=reactive({courseId:'',examName:'阶段考试',examTime:'2026-12-31T10:00:00',totalScore:0,durationMinutes:120,description:''})
@@ -79,6 +90,15 @@ const undo=async(examId)=>{await request.post('/api/exam/undo',null,{params:{exa
 const grade=async(row)=>{
   await request.post('/api/teacher/exam-grade',null,{params:{recordId:row.record.id,subjectiveScore:row._subjectiveScore||0,comment:row._comment||''}})
   load()
+}
+const goDetail=(row)=>router.push({path:'/manager/teacher-grade-detail',query:{type:'exam',recordId:row.record.id}})
+const parseRemark=(raw='')=>{
+  try {
+    const m = JSON.parse(raw || '{}')
+    return m.message || raw
+  } catch {
+    return raw
+  }
 }
 loadCourses().then(load)
 </script>

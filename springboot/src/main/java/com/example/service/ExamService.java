@@ -78,7 +78,7 @@ public class ExamService {
         String remark = "系统已自动判客观题得分：" + autoScore;
         if (subjectiveCount > 0) remark += "，主观题待教师批改";
         payload.put("message", remark);
-        record.setRemark(remark);
+        record.setRemark(writeJson(payload));
         record.setStatus("FINISHED");
         record.setSubmitTime(now);
         record.setUpdateTime(now);
@@ -221,5 +221,13 @@ public class ExamService {
         if (v == null) return 0;
         if (v instanceof Number n) return n.intValue();
         try { return Integer.parseInt(String.valueOf(v)); } catch (Exception e) { return 0; }
+    }
+
+    private String writeJson(Map<String, Object> map) {
+        try {
+            return MAPPER.writeValueAsString(map);
+        } catch (Exception e) {
+            return "{}";
+        }
     }
 }

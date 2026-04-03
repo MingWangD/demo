@@ -96,7 +96,7 @@ public class StudentService {
             m.put("qualificationReason", qualification == null ? "未生成资格" : qualification.getReason());
             m.put("score", record == null ? null : record.getScore());
             m.put("status", record == null ? "NOT_JOINED" : record.getStatus());
-            m.put("autoJudgeRemark", record == null ? null : record.getRemark());
+            m.put("autoJudgeRemark", record == null ? null : parseExamRemark(record.getRemark()));
             m.put("submitTime", record == null ? null : record.getSubmitTime());
             return m;
         }).toList();
@@ -155,6 +155,19 @@ public class StudentService {
         for (Course c : courses(studentId)) {
             StudentFeature f = featureExtractor.extractAndSave(studentId, c.getId());
             riskPredictor.predictAndSave(f);
+        }
+    }
+
+    private String parseExamRemark(String remark) {
+        if (remark == null || remark.isEmpty()) return "";
+        if (!remark.trim().startsWith("{")) return remark;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, Object> m = mapper.readValue(remark, java.util.Map.class);
+            Object message = m.get("message");
+            return message == null ? remark : String.valueOf(message);
+        } catch (Exception e) {
+            return remark;
         }
     }
 
