@@ -14,7 +14,7 @@ TRUNCATE TABLE student_course;
 TRUNCATE TABLE course;
 TRUNCATE TABLE sys_user;
 SET FOREIGN_KEY_CHECKS = 1;
-
+/*
 INSERT INTO sys_user (id, username, password, name, role, student_no, teacher_no, college, major, class_name, status, avatar)
 VALUES
 (1, 't_zhang', '123456', '张老师', 'TEACHER', NULL, 'T2026001', '计算机学院', NULL, NULL, 'ACTIVE', NULL),
@@ -25,7 +25,7 @@ VALUES
 (104, 's_zhao', '123456', '赵峰', 'STUDENT', '20260004', NULL, '计算机学院', '软件工程', '软工2班', 'ACTIVE', NULL),
 (105, 's_sun', '123456', '孙丽', 'STUDENT', '20260005', NULL, '计算机学院', '网络工程', '网工1班', 'ACTIVE', NULL),
 (106, 's_hu', '123456', '胡涛', 'STUDENT', '20260006', NULL, '计算机学院', '网络工程', '网工1班', 'ACTIVE', NULL);
-
+*/
 INSERT INTO course (id, course_name, course_code, teacher_id, credit, semester, total_weeks, attendance_required_count, exam_qualification_rate, description)
 VALUES
 (201, '数据结构', 'CS2026-DS', 1, 4.0, '2026-Spring', 16, 10, 0.67, '核心专业基础课'),
@@ -150,3 +150,4 @@ VALUES
 (105, 1, 201, 603, 'TALK', '约谈学生并制定每周学习计划', '学生承诺按时提交作业'),
 (105, 1, 201, 604, 'PARENT_CONTACT', '联系家长同步学业风险情况', '家长表示配合监督'),
 (106, 2, 203, 605, 'LEARNING_SUPPORT', '安排机器学习课程一对一辅导', '已完成第一次辅导');
+*/
