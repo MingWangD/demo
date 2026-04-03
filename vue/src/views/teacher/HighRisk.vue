@@ -42,7 +42,7 @@
       />
     </div>
     <div class="card" style="margin-top:12px;color:#606266;line-height:1.8">
-      <div style="font-weight:600;color:#303133">风险概率计算公式（逻辑回归演示版）</div>
+      <div style="font-weight:600;color:#303133">风险概率计算公式（逻辑回归）</div>
       <div>p = sigmoid(z), sigmoid(z) = 1 / (1 + e<sup>-z</sup>)</div>
       <div>
         z = 0.35
