@@ -5,7 +5,7 @@
       <div class="card" style="flex:1"><base-pie-chart title="风险分布" :data="riskPie"/></div>
       <div class="card" style="flex:1"><base-pie-chart title="GPA颜色分布" :data="gpaPie"/></div>
     </div>
-    <div class="card" style="margin-top:10px"><base-line-chart title="全班同学的整体风险趋势（百分比，越高越危险）" :x-data="trendX" :y-data="trendY" unit="%"/></div>
+    <div class="card" style="margin-top:10px"><base-line-chart title="全班同学的整体风险趋势（百分比，越高越危险）" :x-data="trendX" :y-data="trendY" unit="%" x-name="统计日期" y-name="班级平均风险概率"/></div>
     <div class="card" style="margin-top:10px">
       <h4>高风险学生列表</h4>
       <el-table :data="highRiskPaged">
