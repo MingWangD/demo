@@ -20,8 +20,17 @@
         <el-table-column prop="studentId" label="学生ID"/>
         <el-table-column prop="status" label="状态"/>
         <el-table-column prop="score" label="分数"/>
-        <el-table-column prop="submitContent" label="学生作答"/>
+        <el-table-column label="学生作答">
+          <template #default="scope">
+            {{ shortAnswer(scope.row.submitContent) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="teacherComment" label="评语"/>
+        <el-table-column label="详情" width="110">
+          <template #default="scope">
+            <el-button size="small" @click="goDetail(scope.row)">本次作业</el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="评分">
           <template #default="scope">
             <el-input v-model="scope.row._score" placeholder="分数" style="width:70px;margin-right:6px"/>
@@ -56,6 +65,8 @@
 import {computed, reactive, ref} from 'vue'
 import request from '@/utils/request'
 import { getQuestionBank } from '@/utils/questionBank'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 const courses = ref([])
 const list = ref([])
 const form=reactive({courseId:'',title:'新作业',content:'',deadline:'2026-12-31T23:59:59',totalScore:0})
@@ -79,5 +90,16 @@ const create=async()=>{
 const load=async()=>{const r=await request.get('/api/teacher/homework-manage',{params:{courseId:form.courseId}}); list.value=r.data||[]}
 const grade=async(row)=>{await request.post('/api/teacher/homework-grade',null,{params:{submissionId:row.id,score:row._score||row.score||0,comment:row._comment||''}}); load()}
 const undo=async(homeworkId)=>{await request.post('/api/homework/undo',null,{params:{homeworkId}}); load()}
+const shortAnswer=(raw='')=>{
+  try {
+    const m=JSON.parse(raw||'{}')
+    const oa=(m.objectiveDetail||[]).join(',')
+    const sa=(m.subjectiveAnswers||[]).join(' | ')
+    return `客观:${oa || '-'}；主观:${sa || '-'}`
+  } catch {
+    return String(raw||'').slice(0,30)
+  }
+}
+const goDetail=(row)=>router.push({path:'/manager/teacher-grade-detail',query:{type:'homework',submissionId:row.id}})
 loadCourses().then(load)
 </script>

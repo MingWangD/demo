@@ -8,6 +8,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,7 @@ public class StudentService {
     @Resource private ExamMapper examMapper;
     @Resource private ExamQualificationMapper examQualificationMapper;
     @Resource private ExamRecordMapper examRecordMapper;
+    @Resource private InterventionRecordMapper interventionRecordMapper;
     @Resource private ExamService examService;
     @Resource private FeatureExtractor featureExtractor;
     @Resource private RiskPredictor riskPredictor;
@@ -38,14 +40,21 @@ public class StudentService {
         StudentAttendance aq = new StudentAttendance(); aq.setStudentId(studentId);
         int attendanceCount = studentAttendanceMapper.selectAll(aq).size();
 
+        List<Long> courseIds = courses(studentId).stream().map(Course::getId).toList();
+        List<Long> homeworkIds = courseIds.isEmpty() ? List.of() : homeworkMapper.selectAll(new Homework()).stream()
+                .filter(h -> courseIds.contains(h.getCourseId()))
+                .map(Homework::getId)
+                .toList();
         HomeworkSubmission hsq = new HomeworkSubmission(); hsq.setStudentId(studentId);
-        List<HomeworkSubmission> submissions = homeworkSubmissionMapper.selectAll(hsq);
+        List<HomeworkSubmission> submissions = homeworkSubmissionMapper.selectAll(hsq).stream()
+                .filter(s -> homeworkIds.contains(s.getHomeworkId()))
+                .toList();
         long submitted = submissions.stream().filter(s -> "SUBMITTED".equals(s.getStatus()) || "GRADED".equals(s.getStatus())).count();
-        BigDecimal submitRate = submissions.isEmpty() ? BigDecimal.ZERO : BigDecimal.valueOf(submitted).divide(BigDecimal.valueOf(submissions.size()), 4, java.math.RoundingMode.HALF_UP);
+        BigDecimal submitRate = homeworkIds.isEmpty() ? BigDecimal.ZERO : BigDecimal.valueOf(submitted).divide(BigDecimal.valueOf(homeworkIds.size()), 4, RoundingMode.HALF_UP);
 
         ExamRecord eq = new ExamRecord(); eq.setStudentId(studentId);
         List<ExamRecord> records = examRecordMapper.selectAll(eq);
-        BigDecimal examAvg = BigDecimal.valueOf(records.stream().map(ExamRecord::getScore).filter(Objects::nonNull).mapToDouble(BigDecimal::doubleValue).average().orElse(0));
+        BigDecimal examAvg = BigDecimal.valueOf(records.stream().map(ExamRecord::getScore).filter(Objects::nonNull).mapToDouble(BigDecimal::doubleValue).average().orElse(0)).setScale(2, RoundingMode.HALF_UP);
 
         res.put("user", user);
         res.put("earnedCredit", academic == null ? BigDecimal.ZERO : academic.getEarnedCredit());
@@ -96,7 +105,7 @@ public class StudentService {
             m.put("qualificationReason", qualification == null ? "未生成资格" : qualification.getReason());
             m.put("score", record == null ? null : record.getScore());
             m.put("status", record == null ? "NOT_JOINED" : record.getStatus());
-            m.put("autoJudgeRemark", record == null ? null : record.getRemark());
+            m.put("autoJudgeRemark", record == null ? null : parseExamRemark(record.getRemark()));
             m.put("submitTime", record == null ? null : record.getSubmitTime());
             return m;
         }).toList();
@@ -107,10 +116,13 @@ public class StudentService {
         StudentAcademic aq = new StudentAcademic(); aq.setStudentId(studentId);
         StudentAcademic academic = studentAcademicMapper.selectAll(aq).stream().findFirst().orElse(null);
         RiskPrediction rp = riskPredictionMapper.selectAll(q).stream().findFirst().orElse(null);
+        InterventionRecord iq = new InterventionRecord(); iq.setStudentId(studentId);
+        InterventionRecord latestIntervention = interventionRecordMapper.selectAll(iq).stream().findFirst().orElse(null);
 
         Map<String, Object> m = new HashMap<>();
         m.put("risk", rp);
         m.put("academic", academic);
+        m.put("latestIntervention", latestIntervention);
         return m;
     }
 
@@ -155,6 +167,19 @@ public class StudentService {
         for (Course c : courses(studentId)) {
             StudentFeature f = featureExtractor.extractAndSave(studentId, c.getId());
             riskPredictor.predictAndSave(f);
+        }
+    }
+
+    private String parseExamRemark(String remark) {
+        if (remark == null || remark.isEmpty()) return "";
+        if (!remark.trim().startsWith("{")) return remark;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, Object> m = mapper.readValue(remark, java.util.Map.class);
+            Object message = m.get("message");
+            return message == null ? remark : String.valueOf(message);
+        } catch (Exception e) {
+            return remark;
         }
     }
 
