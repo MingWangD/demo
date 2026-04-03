@@ -30,6 +30,23 @@ public class TeacherService {
         return courseMapper.selectAll(q);
     }
 
+    public List<Map<String, Object>> courseStudents(Long teacherId, Long courseId) {
+        validateCourseOwner(courseId, teacherId);
+        StudentCourse q = new StudentCourse();
+        q.setCourseId(courseId);
+        return studentCourseMapper.selectAll(q).stream()
+                .map(sc -> {
+                    SysUser u = sysUserMapper.selectById(sc.getStudentId());
+                    if (u == null) return null;
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("studentId", u.getId());
+                    m.put("studentName", u.getName());
+                    return m;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
     public Map<String, Object> studentDetail(Long teacherId, Long studentId, Long courseId) {
         if (courseId != null) validateCourseOwner(courseId, teacherId);
         Map<String, Object> m = new HashMap<>();
@@ -97,6 +114,8 @@ public class TeacherService {
                     m.put("risk", r);
                     m.put("academic", ac);
                     m.put("student", sysUserMapper.selectById(r.getStudentId()));
+                    Course c = r.getCourseId() == null ? null : courseMapper.selectById(r.getCourseId());
+                    m.put("courseName", c == null ? "-" : c.getCourseName());
                     return m;
                 })
                 .filter(Objects::nonNull)

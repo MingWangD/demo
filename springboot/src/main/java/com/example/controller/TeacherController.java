@@ -23,6 +23,11 @@ public class TeacherController {
         return Result.success(teacherService.studentDetail(AuthContext.userId(), studentId, courseId));
     }
 
+    @GetMapping("/course-students")
+    public Result courseStudents(@RequestParam Long courseId) {
+        return Result.success(teacherService.courseStudents(AuthContext.userId(), courseId));
+    }
+
     @GetMapping("/high-risk")
     public Result highRisk(@RequestParam(required = false) Long courseId,
                            @RequestParam(required = false) String riskLevel,

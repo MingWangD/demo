@@ -19,7 +19,11 @@
     </div>
     <el-table :data="list" empty-text="暂无数据，请调整筛选条件" style="margin-top:10px">
       <el-table-column label="学生" prop="student.name"/>
-      <el-table-column label="课程ID" prop="risk.courseId"/>
+      <el-table-column label="课程">
+        <template #default="scope">
+          {{ scope.row.courseName || `课程ID:${scope.row.risk?.courseId ?? '-'}` }}
+        </template>
+      </el-table-column>
       <el-table-column label="风险概率" prop="risk.riskProbability"/>
       <el-table-column label="风险等级" prop="risk.riskLevel"/>
       <el-table-column label="GPA颜色" prop="academic.gpaColor"/>
@@ -36,6 +40,20 @@
           @current-change="onPageChange"
           @size-change="onSizeChange"
       />
+    </div>
+    <div class="card" style="margin-top:12px;color:#606266;line-height:1.8">
+      <div style="font-weight:600;color:#303133">风险概率计算公式（逻辑回归演示版）</div>
+      <div>p = sigmoid(z), sigmoid(z) = 1 / (1 + e<sup>-z</sup>)</div>
+      <div>
+        z = 0.35
+        - 2.2 × 出勤率
+        - 1.8 × 作业提交率
+        - 0.018 × 作业均分
+        - 0.020 × 考试均分
+        - 1.4 × GPA
+        + 0.65 × 缺交作业数
+        + 0.95 × 缺考数
+      </div>
     </div>
   </div>
 </template>
