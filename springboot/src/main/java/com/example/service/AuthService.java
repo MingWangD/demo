@@ -33,6 +33,9 @@ public class AuthService {
         if (user == null || !user.getPassword().equals(request.getPassword())) {
             throw new CustomException("账号或密码错误");
         }
+        if (request.getRole() != null && !request.getRole().isBlank() && !request.getRole().equals(user.getRole())) {
+            throw new CustomException("登录身份与账号角色不匹配，请重新选择");
+        }
 
         if ("STUDENT".equals(user.getRole())) {
             StudentCourse query = new StudentCourse();

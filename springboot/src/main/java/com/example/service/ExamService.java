@@ -16,11 +16,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 public class ExamService {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Pattern TWO_POINT_QUESTION_PATTERN = Pattern.compile("[（(]\\s*2\\s*分[）)]");
     @Resource private ExamMapper examMapper;
     @Resource private ExamRecordMapper examRecordMapper;
     @Resource private ExamQualificationMapper examQualificationMapper;
@@ -69,7 +72,9 @@ public class ExamService {
             record.setCreateTime(now);
         }
         Map<String, Object> payload = readJson(req.getAnswerContent());
-        int objectiveAnswered = num(payload.get("objectiveAnswered"));
+        int objectiveQuestionCount = countObjectiveQuestions(exam.getDescription());
+        int rawObjectiveAnswered = num(payload.get("objectiveAnswered"));
+        int objectiveAnswered = Math.max(0, Math.min(rawObjectiveAnswered, objectiveQuestionCount));
         int subjectiveCount = count(exam.getDescription(), "主观题");
         BigDecimal autoScore = BigDecimal.valueOf(Math.min(objectiveAnswered * 2, 100));
         record.setScore(autoScore);
@@ -206,6 +211,14 @@ public class ExamService {
         int c = 0, idx = 0;
         while ((idx = text.indexOf(keyword, idx)) >= 0) { c++; idx += keyword.length(); }
         return c;
+    }
+
+    private int countObjectiveQuestions(String text) {
+        if (text == null || text.isEmpty()) return 0;
+        int count = 0;
+        Matcher matcher = TWO_POINT_QUESTION_PATTERN.matcher(text);
+        while (matcher.find()) count++;
+        return count;
     }
 
     private Map<String, Object> readJson(String raw) {

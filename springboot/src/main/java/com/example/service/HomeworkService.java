@@ -17,12 +17,15 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class HomeworkService {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Pattern TWO_POINT_QUESTION_PATTERN = Pattern.compile("[（(]\\s*2\\s*分[）)]");
     @Resource private HomeworkMapper homeworkMapper;
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
     @Resource private FeatureExtractor featureExtractor;
@@ -55,10 +58,16 @@ public class HomeworkService {
             old.setCreateTime(now);
             old.setIsLate(false);
         }
+        Homework hw = homeworkMapper.selectById(req.getHomeworkId());
+        if (hw == null) {
+            throw new CustomException("作业不存在");
+        }
         java.util.Map<String, Object> incoming = readJson(req.getSubmitContent());
         java.util.Map<String, Object> existing = readJson(old.getSubmitContent());
         boolean objectiveLocked = Boolean.TRUE.equals(existing.get("objectiveLocked"));
-        int objectiveAnswered = num(objectiveLocked ? existing.get("objectiveAnswered") : incoming.get("objectiveAnswered"));
+        int objectiveQuestionCount = countObjectiveQuestions(hw.getContent());
+        int rawObjectiveAnswered = num(objectiveLocked ? existing.get("objectiveAnswered") : incoming.get("objectiveAnswered"));
+        int objectiveAnswered = Math.max(0, Math.min(rawObjectiveAnswered, objectiveQuestionCount));
         int objectiveScoreInt = objectiveAnswered * 2;
         Object subjectiveAnswers = incoming.get("subjectiveAnswers");
         if (subjectiveAnswers == null) subjectiveAnswers = existing.get("subjectiveAnswers");
@@ -73,7 +82,6 @@ public class HomeworkService {
         old.setSubmitTime(now);
         old.setStatus("SUBMITTED");
         if (old.getIsLate() == null) old.setIsLate(false);
-        Homework hw = homeworkMapper.selectById(req.getHomeworkId());
         int subjectiveCount = count(hw.getContent(), "主观题");
         java.math.BigDecimal autoScore = java.math.BigDecimal.valueOf(Math.min(objectiveScoreInt, 100));
         old.setScore(autoScore);
@@ -105,6 +113,14 @@ public class HomeworkService {
         int c = 0, idx = 0;
         while ((idx = text.indexOf(keyword, idx)) >= 0) { c++; idx += keyword.length(); }
         return c;
+    }
+
+    private int countObjectiveQuestions(String text) {
+        if (text == null || text.isEmpty()) return 0;
+        int count = 0;
+        Matcher matcher = TWO_POINT_QUESTION_PATTERN.matcher(text);
+        while (matcher.find()) count++;
+        return count;
     }
 
     private java.util.Map<String, Object> readJson(String raw) {
