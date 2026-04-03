@@ -42,7 +42,8 @@ public class StudentController {
 
     @PostMapping("/update-academic")
     public Result updateAcademic(@RequestParam Long studentId, @RequestParam BigDecimal earnedCredit, @RequestParam BigDecimal gpa) {
-        studentService.updateAcademic(studentId, earnedCredit, gpa, GpaColorUtil.resolveColor(gpa));
+        Long resolvedStudentId = resolveStudentId(studentId);
+        studentService.updateAcademic(resolvedStudentId, earnedCredit, gpa, GpaColorUtil.resolveColor(gpa));
         return Result.success();
     }
 }

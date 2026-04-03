@@ -3,10 +3,10 @@
     <h3 style="margin:0 0 10px 0;color:#303133">风险与趋势详情</h3>
     <div class="card">当前风险：{{detail?.risk?.riskProbability}} / {{detail?.risk?.riskLevel}} / {{detail?.risk?.warningColor}}</div>
     <div class="card" style="margin-top:10px">原因：{{detail?.risk?.mainReason}}</div>
-    <div class="card" style="margin-top:10px"><base-line-chart title="风险趋势" :x-data="riskX" :y-data="riskY"/></div>
-    <div class="card" style="margin-top:10px"><base-line-chart title="GPA变化" :x-data="gpaX" :y-data="gpaY"/></div>
-    <div class="card" style="margin-top:10px"><base-line-chart title="作业成绩趋势" :x-data="hwX" :y-data="hwY"/></div>
-    <div class="card" style="margin-top:10px"><base-line-chart title="考试成绩趋势" :x-data="examX" :y-data="examY"/></div>
+    <div class="card" style="margin-top:10px"><base-line-chart title="风险趋势" :x-data="riskX" :y-data="riskY" x-name="预警记录序号" y-name="风险概率"/></div>
+    <div class="card" style="margin-top:10px"><base-line-chart title="GPA变化" :x-data="gpaX" :y-data="gpaY" x-name="统计序号" y-name="GPA"/></div>
+    <div class="card" style="margin-top:10px"><base-line-chart title="作业成绩趋势" :x-data="hwX" :y-data="hwY" x-name="作业序号" y-name="成绩"/></div>
+    <div class="card" style="margin-top:10px"><base-line-chart title="考试成绩趋势" :x-data="examX" :y-data="examY" x-name="考试序号" y-name="成绩"/></div>
   </div>
 </template>
 <script setup>
