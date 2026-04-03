@@ -14,6 +14,7 @@ source springboot/src/main/resources/sql/data.sql;
 ```
 > `data.sql` 已内置固定演示数据（包含高风险学生、预警记录、干预记录），建议答辩前重置一次数据库以保证演示结果稳定。
 > 若需“课程=3门且各课程均有学生可选”的稳定答辩数据，请使用：`springboot/src/main/resources/sql/demo_fixed_showcase.sql`。
+> 若需“20名学生 + 2026-03-15~2026-04-01 时间段”的扩展演示数据，请使用：`springboot/src/main/resources/sql/demo_fixed_20_students_0315_0401.sql`。
 
 ### 2.2 前端启动（已在当前环境验证构建通过）
 ```bash

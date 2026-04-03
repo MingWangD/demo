@@ -8,6 +8,7 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,14 +39,21 @@ public class StudentService {
         StudentAttendance aq = new StudentAttendance(); aq.setStudentId(studentId);
         int attendanceCount = studentAttendanceMapper.selectAll(aq).size();
 
+        List<Long> courseIds = courses(studentId).stream().map(Course::getId).toList();
+        List<Long> homeworkIds = courseIds.isEmpty() ? List.of() : homeworkMapper.selectAll(new Homework()).stream()
+                .filter(h -> courseIds.contains(h.getCourseId()))
+                .map(Homework::getId)
+                .toList();
         HomeworkSubmission hsq = new HomeworkSubmission(); hsq.setStudentId(studentId);
-        List<HomeworkSubmission> submissions = homeworkSubmissionMapper.selectAll(hsq);
+        List<HomeworkSubmission> submissions = homeworkSubmissionMapper.selectAll(hsq).stream()
+                .filter(s -> homeworkIds.contains(s.getHomeworkId()))
+                .toList();
         long submitted = submissions.stream().filter(s -> "SUBMITTED".equals(s.getStatus()) || "GRADED".equals(s.getStatus())).count();
-        BigDecimal submitRate = submissions.isEmpty() ? BigDecimal.ZERO : BigDecimal.valueOf(submitted).divide(BigDecimal.valueOf(submissions.size()), 4, java.math.RoundingMode.HALF_UP);
+        BigDecimal submitRate = homeworkIds.isEmpty() ? BigDecimal.ZERO : BigDecimal.valueOf(submitted).divide(BigDecimal.valueOf(homeworkIds.size()), 4, RoundingMode.HALF_UP);
 
         ExamRecord eq = new ExamRecord(); eq.setStudentId(studentId);
         List<ExamRecord> records = examRecordMapper.selectAll(eq);
-        BigDecimal examAvg = BigDecimal.valueOf(records.stream().map(ExamRecord::getScore).filter(Objects::nonNull).mapToDouble(BigDecimal::doubleValue).average().orElse(0));
+        BigDecimal examAvg = BigDecimal.valueOf(records.stream().map(ExamRecord::getScore).filter(Objects::nonNull).mapToDouble(BigDecimal::doubleValue).average().orElse(0)).setScale(2, RoundingMode.HALF_UP);
 
         res.put("user", user);
         res.put("earnedCredit", academic == null ? BigDecimal.ZERO : academic.getEarnedCredit());
