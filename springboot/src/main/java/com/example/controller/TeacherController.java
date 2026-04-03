@@ -23,11 +23,18 @@ public class TeacherController {
         return Result.success(teacherService.studentDetail(AuthContext.userId(), studentId, courseId));
     }
 
+    @GetMapping("/course-students")
+    public Result courseStudents(@RequestParam Long courseId) {
+        return Result.success(teacherService.courseStudents(AuthContext.userId(), courseId));
+    }
+
     @GetMapping("/high-risk")
     public Result highRisk(@RequestParam(required = false) Long courseId,
                            @RequestParam(required = false) String riskLevel,
-                           @RequestParam(required = false) String gpaColor) {
-        return Result.success(teacherService.highRisk(AuthContext.userId(), courseId, riskLevel, gpaColor));
+                           @RequestParam(required = false) String gpaColor,
+                           @RequestParam(defaultValue = "1") Integer pageNum,
+                           @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(teacherService.highRisk(AuthContext.userId(), courseId, riskLevel, gpaColor, pageNum, pageSize));
     }
 
     @GetMapping("/homework-manage")
