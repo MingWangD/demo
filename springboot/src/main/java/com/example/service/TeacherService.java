@@ -22,7 +22,6 @@ public class TeacherService {
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
     @Resource private ExamMapper examMapper;
     @Resource private ExamRecordMapper examRecordMapper;
-    @Resource private ExamMapper examMapper;
     @Resource private ExamService examService;
 
     public List<Course> courseList(Long teacherId) {
@@ -59,7 +58,7 @@ public class TeacherService {
         return m;
     }
 
-    public List<Map<String, Object>> highRisk(Long teacherId, Long courseId, String riskLevel, String gpaColor) {
+    public Map<String, Object> highRisk(Long teacherId, Long courseId, String riskLevel, String gpaColor, Integer pageNum, Integer pageSize) {
         if (courseId != null) validateCourseOwner(courseId, teacherId);
         Set<Long> allowedCourseIds = courseList(teacherId).stream().map(Course::getId).collect(Collectors.toSet());
         List<RiskPrediction> latestOnly = riskPredictionMapper.selectAll(new RiskPrediction()).stream()
@@ -75,7 +74,18 @@ public class TeacherService {
                         }
                 ))
                 .values().stream().toList();
-        return latestOnly.stream()
+        if (courseId == null) {
+            latestOnly = latestOnly.stream().collect(Collectors.toMap(
+                    RiskPrediction::getStudentId,
+                    r -> r,
+                    (a, b) -> {
+                        if (a.getRiskProbability() == null) return b;
+                        if (b.getRiskProbability() == null) return a;
+                        return b.getRiskProbability().compareTo(a.getRiskProbability()) > 0 ? b : a;
+                    }
+            )).values().stream().toList();
+        }
+        List<Map<String, Object>> filtered = latestOnly.stream()
                 .filter(r -> r.getCourseId() == null || allowedCourseIds.contains(r.getCourseId()))
                 .filter(r -> courseId == null || courseId.equals(r.getCourseId()))
                 .filter(r -> riskLevel == null || riskLevel.isEmpty() || riskLevel.equals(r.getRiskLevel()))
@@ -91,6 +101,20 @@ public class TeacherService {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
+        int safePageNum = pageNum == null || pageNum < 1 ? 1 : pageNum;
+        int safePageSize = pageSize == null || pageSize < 1 ? 10 : Math.min(pageSize, 100);
+        int total = filtered.size();
+        int from = Math.min((safePageNum - 1) * safePageSize, total);
+        int to = Math.min(from + safePageSize, total);
+        List<Map<String, Object>> paged = filtered.subList(from, to);
+
+        Map<String, Object> pageResult = new HashMap<>();
+        pageResult.put("list", paged);
+        pageResult.put("total", total);
+        pageResult.put("pageNum", safePageNum);
+        pageResult.put("pageSize", safePageSize);
+        return pageResult;
     }
 
     public List<Map<String, Object>> homeworkManage(Long teacherId, Long courseId) {

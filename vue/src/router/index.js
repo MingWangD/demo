@@ -27,4 +27,26 @@ const router = createRouter({
   ]
 })
 
+const readUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('system-user') || '{}')
+  } catch (e) {
+    return {}
+  }
+}
+
+router.beforeEach((to, from, next) => {
+  if (to.path === '/login') return next()
+  const user = readUser()
+  if (!user.token) return next('/login')
+
+  if (to.path.startsWith('/manager/student-') && user.role !== 'STUDENT') {
+    return next('/manager/home')
+  }
+  if (to.path.startsWith('/manager/teacher-') && user.role !== 'TEACHER') {
+    return next('/manager/home')
+  }
+  next()
+})
+
 export default router
