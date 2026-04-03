@@ -60,13 +60,15 @@ public class HomeworkService {
         boolean objectiveLocked = Boolean.TRUE.equals(existing.get("objectiveLocked"));
         int objectiveAnswered = num(objectiveLocked ? existing.get("objectiveAnswered") : incoming.get("objectiveAnswered"));
         int objectiveScoreInt = objectiveAnswered * 2;
-        String subjectiveAnswer = String.valueOf(incoming.getOrDefault("subjectiveAnswer", existing.getOrDefault("subjectiveAnswer", "")));
+        Object subjectiveAnswers = incoming.get("subjectiveAnswers");
+        if (subjectiveAnswers == null) subjectiveAnswers = existing.get("subjectiveAnswers");
+        if (subjectiveAnswers == null) subjectiveAnswers = java.util.List.of(String.valueOf(incoming.getOrDefault("subjectiveAnswer", existing.getOrDefault("subjectiveAnswer", ""))));
         java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
         payload.put("objectiveLocked", true);
         payload.put("objectiveAnswered", objectiveAnswered);
         payload.put("objectiveScore", objectiveScoreInt);
         payload.put("objectiveDetail", objectiveLocked ? existing.get("objectiveDetail") : incoming.get("objectiveDetail"));
-        payload.put("subjectiveAnswer", subjectiveAnswer);
+        payload.put("subjectiveAnswers", subjectiveAnswers);
         old.setSubmitContent(writeJson(payload));
         old.setSubmitTime(now);
         old.setStatus("SUBMITTED");
