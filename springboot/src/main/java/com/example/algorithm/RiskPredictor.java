@@ -22,16 +22,18 @@ public class RiskPredictor {
 
     public RiskPrediction predictAndSave(StudentFeature feature) {
         BigDecimal probability = logisticRegression.predictProbability(feature);
+        boolean gpaHighRisk = feature.getGpa() != null && feature.getGpa().compareTo(new BigDecimal("1.5")) < 0;
+        boolean gpaMediumRisk = feature.getGpa() != null && feature.getGpa().compareTo(new BigDecimal("2.0")) < 0;
         RiskPrediction prediction = new RiskPrediction();
         prediction.setStudentId(feature.getStudentId());
         prediction.setCourseId(feature.getCourseId());
         prediction.setRiskProbability(probability);
 
-        if (probability.compareTo(new BigDecimal("0.8")) >= 0) {
+        if (probability.compareTo(new BigDecimal("0.8")) >= 0 || gpaHighRisk) {
             prediction.setRiskLevel("HIGH");
             prediction.setWarningColor("RED");
             prediction.setRiskLabel("高风险");
-        } else if (probability.compareTo(new BigDecimal("0.5")) >= 0) {
+        } else if (probability.compareTo(new BigDecimal("0.5")) >= 0 || gpaMediumRisk) {
             prediction.setRiskLevel("MEDIUM");
             prediction.setWarningColor("ORANGE");
             prediction.setRiskLabel("中风险");
