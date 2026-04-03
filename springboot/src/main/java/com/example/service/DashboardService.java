@@ -20,7 +20,20 @@ public class DashboardService {
 
     public Map<String, Object> teacherDashboard() {
         List<RiskPrediction> allRisk = riskPredictionMapper.selectAll(new RiskPrediction());
-        Map<String, Long> riskCount = allRisk.stream().collect(Collectors.groupingBy(RiskPrediction::getRiskLevel, Collectors.counting()));
+        List<RiskPrediction> latestRisk = allRisk.stream()
+                .collect(Collectors.toMap(
+                        r -> r.getStudentId() + "_" + (r.getCourseId() == null ? "null" : r.getCourseId()),
+                        r -> r,
+                        (a, b) -> {
+                            java.time.LocalDateTime at = a.getPredictTime() == null ? a.getCreateTime() : a.getPredictTime();
+                            java.time.LocalDateTime bt = b.getPredictTime() == null ? b.getCreateTime() : b.getPredictTime();
+                            if (at == null) return b;
+                            if (bt == null) return a;
+                            return bt.isAfter(at) ? b : a;
+                        }
+                ))
+                .values().stream().toList();
+        Map<String, Long> riskCount = latestRisk.stream().collect(Collectors.groupingBy(RiskPrediction::getRiskLevel, Collectors.counting()));
 
         List<StudentAcademic> academics = studentAcademicMapper.selectAll(new StudentAcademic());
         Map<String, Long> gpaColors = academics.stream().collect(Collectors.groupingBy(StudentAcademic::getGpaColor, Collectors.counting()));
@@ -50,7 +63,7 @@ public class DashboardService {
         map.put("lowRiskCount", riskCount.getOrDefault("LOW", 0L));
         map.put("gpaColor", gpaColors);
         map.put("recentWarnings", warnings.stream().limit(10).toList());
-        map.put("highRiskStudents", allRisk.stream().filter(r -> "HIGH".equals(r.getRiskLevel())).toList());
+        map.put("highRiskStudents", latestRisk.stream().filter(r -> "HIGH".equals(r.getRiskLevel())).toList());
         map.put("riskTrend", classTrend);
         return map;
     }
