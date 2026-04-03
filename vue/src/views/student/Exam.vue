@@ -29,7 +29,10 @@
         </div>
         <div style="margin-top:10px">
           <div style="font-weight:600">主观题作答</div>
-          <el-input v-model="subjectiveAnswer" type="textarea" :rows="4" placeholder="请输入主观题答案"/>
+          <div v-for="(q, idx) in subjectiveQuestions" :key="`es-${idx}`" style="margin-top:8px">
+            <div>{{idx + 1}}. {{q}}</div>
+            <el-input v-model="subjectiveAnswers[idx]" type="textarea" :rows="2" placeholder="请输入主观题答案"/>
+          </div>
         </div>
       </div>
       <template #footer>
@@ -49,15 +52,18 @@ const showDialog = ref(false)
 const current = ref(null)
 const objectiveQuestions = ref([])
 const objectiveAnswers = ref([])
-const subjectiveAnswer = ref('')
+const subjectiveQuestions = ref([])
+const subjectiveAnswers = ref([])
 const normalize = (content='') => String(content).replace(/\\\\n/g, '\n')
 const loadCourses = async()=>{const r=await request.get('/api/student/courses',{params:{studentId:user.userId||user.id}}); courses.value=r.data||[]; if(courses.value.length){courseId.value=courses.value[0].id; load()}}
 const load = async()=>{ const r=await request.get('/api/student/exams',{params:{studentId:user.userId||user.id,courseId:courseId.value}}); list.value=r.data||[] }
 const openSubmit = (row)=>{
   current.value = row
-  objectiveQuestions.value = normalize(row.description || '').split('\n').filter(i => i.includes('客观题'))
+  const lines = normalize(row.description || '').split('\n').map(i => i.trim()).filter(Boolean)
+  objectiveQuestions.value = lines.filter(i => /（2分）|\(2分\)|客观题/.test(i))
+  subjectiveQuestions.value = lines.filter(i => /（10分）|\(10分\)|主观题/.test(i))
   objectiveAnswers.value = Array(objectiveQuestions.value.length).fill('')
-  subjectiveAnswer.value = ''
+  subjectiveAnswers.value = Array(subjectiveQuestions.value.length).fill('')
   showDialog.value = true
 }
 const submit = async()=>{
@@ -67,7 +73,7 @@ const submit = async()=>{
     examId:current.value.examId,
     studentId:user.userId||user.id,
     score:80,
-    answerContent:JSON.stringify({ objectiveAnswered, objectiveDetail: objectiveAnswers.value, subjectiveAnswer: subjectiveAnswer.value, objectiveLocked:true })
+    answerContent:JSON.stringify({ objectiveAnswered, objectiveDetail: objectiveAnswers.value, subjectiveAnswers: subjectiveAnswers.value, objectiveLocked:true })
   })
   showDialog.value = false
   load()
