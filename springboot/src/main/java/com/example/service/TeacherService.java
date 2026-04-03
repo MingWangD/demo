@@ -74,6 +74,17 @@ public class TeacherService {
                         }
                 ))
                 .values().stream().toList();
+        if (courseId == null) {
+            latestOnly = latestOnly.stream().collect(Collectors.toMap(
+                    RiskPrediction::getStudentId,
+                    r -> r,
+                    (a, b) -> {
+                        if (a.getRiskProbability() == null) return b;
+                        if (b.getRiskProbability() == null) return a;
+                        return b.getRiskProbability().compareTo(a.getRiskProbability()) > 0 ? b : a;
+                    }
+            )).values().stream().toList();
+        }
         List<Map<String, Object>> filtered = latestOnly.stream()
                 .filter(r -> r.getCourseId() == null || allowedCourseIds.contains(r.getCourseId()))
                 .filter(r -> courseId == null || courseId.equals(r.getCourseId()))
