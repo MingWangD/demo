@@ -25,6 +25,7 @@ public class StudentService {
     @Resource private ExamMapper examMapper;
     @Resource private ExamQualificationMapper examQualificationMapper;
     @Resource private ExamRecordMapper examRecordMapper;
+    @Resource private InterventionRecordMapper interventionRecordMapper;
     @Resource private ExamService examService;
     @Resource private FeatureExtractor featureExtractor;
     @Resource private RiskPredictor riskPredictor;
@@ -115,10 +116,13 @@ public class StudentService {
         StudentAcademic aq = new StudentAcademic(); aq.setStudentId(studentId);
         StudentAcademic academic = studentAcademicMapper.selectAll(aq).stream().findFirst().orElse(null);
         RiskPrediction rp = riskPredictionMapper.selectAll(q).stream().findFirst().orElse(null);
+        InterventionRecord iq = new InterventionRecord(); iq.setStudentId(studentId);
+        InterventionRecord latestIntervention = interventionRecordMapper.selectAll(iq).stream().findFirst().orElse(null);
 
         Map<String, Object> m = new HashMap<>();
         m.put("risk", rp);
         m.put("academic", academic);
+        m.put("latestIntervention", latestIntervention);
         return m;
     }
 

@@ -34,10 +34,38 @@
 </template>
 
 <script setup>
-import { reactive } from "vue";
+import { onMounted, reactive } from "vue";
 import router from "@/router";
-import {ElMessage} from "element-plus";
+import {ElMessage, ElMessageBox} from "element-plus";
+import request from "@/utils/request";
 const data = reactive({ user: JSON.parse(localStorage.getItem('system-user') || '{}') })
 if (!data.user?.token) { ElMessage.error('请登录！'); router.push('/login') }
 const logout = () => { router.push('/login'); localStorage.removeItem('system-user') }
+
+const latestInterventionStorageKey = () => `student-last-intervention-id-${data.user.userId || data.user.id || ''}`
+const loadStudentInterventionReminder = async () => {
+  try {
+    if (data.user.role !== 'STUDENT') return
+    const studentId = data.user.userId || data.user.id
+    if (!studentId) return
+    const res = await request.get('/api/intervention/list', { params: { studentId } })
+    const interventions = res.data || []
+    const latest = interventions[0]
+    if (!latest?.id || !latest?.interventionContent) return
+    const storageKey = latestInterventionStorageKey()
+    const seenId = Number(localStorage.getItem(storageKey) || 0)
+    if (latest.id <= seenId) return
+    await ElMessageBox.alert(latest.interventionContent, '⚠ 老师干预提醒', {
+      confirmButtonText: '我知道了',
+      type: 'warning'
+    })
+    localStorage.setItem(storageKey, String(latest.id))
+  } catch (e) {
+    // noop: avoid interrupting main page rendering when reminder fetch fails
+  }
+}
+
+onMounted(async () => {
+  await loadStudentInterventionReminder()
+})
 </script>

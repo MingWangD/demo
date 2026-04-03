@@ -20,7 +20,8 @@ public class InterventionController {
 
     @GetMapping("/list")
     public Result list(@RequestParam(required = false) Long studentId, @RequestParam(required = false) Long courseId) {
-        return Result.success(interventionService.list(studentId, courseId));
+        Long resolvedStudentId = "STUDENT".equals(AuthContext.role()) ? AuthContext.userId() : studentId;
+        return Result.success(interventionService.list(resolvedStudentId, courseId));
     }
 
     @GetMapping("/options")
