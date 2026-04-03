@@ -28,7 +28,10 @@
         </div>
         <div style="margin-top:10px">
           <div style="font-weight:600">主观题作答</div>
-          <el-input v-model="subjectiveAnswer" type="textarea" :rows="4" placeholder="请输入主观题答案"/>
+          <div v-for="(q, idx) in subjectiveQuestions" :key="`s-${idx}`" style="margin-top:8px">
+            <div>{{idx + 1}}. {{q}}</div>
+            <el-input v-model="subjectiveAnswers[idx]" type="textarea" :rows="2" placeholder="请输入主观题答案"/>
+          </div>
         </div>
       </div>
       <template #footer>
@@ -49,7 +52,8 @@ const current = ref(null)
 const objectiveQuestions = ref([])
 const objectiveOptions = ref([])
 const objectiveAnswers = ref([])
-const subjectiveAnswer = ref('')
+const subjectiveQuestions = ref([])
+const subjectiveAnswers = ref([])
 const objectiveLocked = ref(false)
 const normalize = (content='') => String(content).replace(/\\\\n/g, '\n')
 const parseLines = (content='') => normalize(content).split('\n').map(i => i.trim()).filter(Boolean)
@@ -60,6 +64,10 @@ const parseQuestions = (content='') => {
   return lines.filter(i => !i.includes('主观题') && !i.includes('简答题'))
 }
 const parseSubjective = (content='') => parseLines(content).find(i => i.includes('主观题') || i.includes('简答题')) || ''
+const parseSubjectiveList = (content='') => {
+  const lines = parseLines(content)
+  return lines.filter(i => /（10分）|\(10分\)/.test(i) || i.includes('主观题'))
+}
 const parseSubmission = (text) => { try { return JSON.parse(text || '{}') } catch { return {} } }
 const OPTION_POOL = [
   '时间复杂度更低', '空间开销最小', '鲁棒性更强', '可维护性更高', '便于并行处理', '更符合题干约束',
@@ -97,7 +105,8 @@ const openSubmit = (row) => {
   const existing = parseSubmission(row.submission?.submitContent)
   objectiveAnswers.value = existing.objectiveDetail || Array(objectiveQuestions.value.length).fill('')
   objectiveLocked.value = !!existing.objectiveLocked
-  subjectiveAnswer.value = existing.subjectiveAnswer || parseSubjective(row.homework.content || '')
+  subjectiveQuestions.value = parseSubjectiveList(row.homework.content || '')
+  subjectiveAnswers.value = existing.subjectiveAnswers || (subjectiveQuestions.value.length ? Array(subjectiveQuestions.value.length).fill('') : [parseSubjective(row.homework.content || '')])
   showDialog.value = true
 }
 const submit = async()=>{
@@ -106,7 +115,7 @@ const submit = async()=>{
   const payload = {
     objectiveAnswered,
     objectiveDetail: objectiveAnswers.value,
-    subjectiveAnswer: subjectiveAnswer.value,
+    subjectiveAnswers: subjectiveAnswers.value,
     objectiveLocked: true
   }
   const res = await request.post('/api/homework/submit',{homeworkId:current.value.homework.id,studentId:user.userId||user.id,submitContent:JSON.stringify(payload)})

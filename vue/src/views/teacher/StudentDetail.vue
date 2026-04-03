@@ -47,12 +47,8 @@ const loadCourses = async()=>{
 }
 const loadStudentOptions = async()=>{
   if (!courseId.value) return
-  const r = await request.get('/api/teacher/high-risk',{params:{courseId:courseId.value}})
-  const map = new Map()
-  ;(r.data || []).forEach(i => {
-    if (i.student?.id && !map.has(i.student.id)) map.set(i.student.id, { studentId:i.student.id, studentName:i.student.name })
-  })
-  students.value = [...map.values()]
+  const r = await request.get('/api/teacher/course-students',{params:{courseId:courseId.value}})
+  students.value = r.data || []
   if (!studentId.value && students.value.length) studentId.value = String(students.value[0].studentId)
 }
 const load=async()=>{
