@@ -1,4 +1,7 @@
 -- 固定演示数据（20名学生，时间范围 2026-03-15 至 2026-04-01）
+-- 教师演示账号：t_zhang / 123456、t_li / 123456
+-- 学生演示账号：s_101 / 123456 至 s_120 / 123456
+-- 注意：本脚本不包含 s_wang / s_liu / s_chen 这组基础演示账号。
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE intervention_record;
 TRUNCATE TABLE warning_record;
