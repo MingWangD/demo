@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 public class HomeworkService {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Pattern TWO_POINT_QUESTION_PATTERN = Pattern.compile("[（(]\\s*2\\s*分[）)]");
+    private static final Pattern TEN_POINT_QUESTION_PATTERN = Pattern.compile("[（(]\\s*10\\s*分[）)]");
     @Resource private HomeworkMapper homeworkMapper;
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
     @Resource private FeatureExtractor featureExtractor;
@@ -82,7 +83,7 @@ public class HomeworkService {
         old.setSubmitTime(now);
         old.setStatus("SUBMITTED");
         if (old.getIsLate() == null) old.setIsLate(false);
-        int subjectiveCount = count(hw.getContent(), "主观题");
+        int subjectiveCount = countScoreTaggedQuestions(hw.getContent(), TEN_POINT_QUESTION_PATTERN);
         java.math.BigDecimal autoScore = java.math.BigDecimal.valueOf(Math.min(objectiveScoreInt, 100));
         old.setScore(autoScore);
         if (subjectiveCount > 0) {
@@ -108,17 +109,14 @@ public class HomeworkService {
         homeworkMapper.deleteById(homeworkId);
     }
 
-    private int count(String text, String keyword) {
-        if (text == null || keyword == null || keyword.isEmpty()) return 0;
-        int c = 0, idx = 0;
-        while ((idx = text.indexOf(keyword, idx)) >= 0) { c++; idx += keyword.length(); }
-        return c;
+    private int countObjectiveQuestions(String text) {
+        return countScoreTaggedQuestions(text, TWO_POINT_QUESTION_PATTERN);
     }
 
-    private int countObjectiveQuestions(String text) {
+    private int countScoreTaggedQuestions(String text, Pattern pattern) {
         if (text == null || text.isEmpty()) return 0;
         int count = 0;
-        Matcher matcher = TWO_POINT_QUESTION_PATTERN.matcher(text);
+        Matcher matcher = pattern.matcher(text);
         while (matcher.find()) count++;
         return count;
     }

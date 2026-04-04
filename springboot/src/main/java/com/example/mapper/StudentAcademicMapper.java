@@ -7,6 +7,7 @@ import java.util.List;
 public interface StudentAcademicMapper {
     int insert(StudentAcademic entity);
     int updateById(StudentAcademic entity);
+    int refreshByStudentId(Long studentId);
     int deleteById(Long id);
     StudentAcademic selectById(Long id);
     List<StudentAcademic> selectAll(StudentAcademic entity);

@@ -39,4 +39,24 @@
         where id = #{id}
     </update>
 
+    <update id="refreshByStudentId">
+        update `student_academic` sa
+        join (
+            select #{studentId} as student_id,
+                   coalesce(round(avg(score) / 25.0, 2), 0) as gpa
+            from `exam_record`
+            where student_id = #{studentId}
+              and score is not null
+        ) t on sa.student_id = t.student_id
+        set sa.gpa = t.gpa,
+            sa.gpa_color = case
+                when t.gpa &lt; 1.5 then 'RED'
+                when t.gpa &lt; 2.0 then 'ORANGE'
+                when t.gpa &lt; 2.5 then 'YELLOW'
+                else 'GREEN'
+            end,
+            sa.update_time = now()
+        where sa.student_id = #{studentId}
+    </update>
+
 </mapper>

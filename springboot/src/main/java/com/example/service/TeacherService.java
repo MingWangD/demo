@@ -6,6 +6,7 @@ import com.example.mapper.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ public class TeacherService {
     @Resource private ExamMapper examMapper;
     @Resource private ExamRecordMapper examRecordMapper;
     @Resource private ExamService examService;
+    @Resource private JdbcTemplate jdbcTemplate;
 
     public List<Course> courseList(Long teacherId) {
         Course q = new Course();
@@ -168,6 +170,7 @@ public class TeacherService {
     public void gradeExam(Long teacherId, Long recordId, java.math.BigDecimal subjectiveScore, String comment) {
         ExamRecord record = examRecordMapper.selectById(recordId);
         if (record == null) return;
+        Long studentId = record.getStudentId();
         Exam ex = examMapper.selectById(record.getExamId());
         validateCourseOwner(ex.getCourseId(), teacherId);
         Map<String, Object> payload = readJson(record.getRemark());
@@ -181,6 +184,11 @@ public class TeacherService {
         record.setRemark(writeJson(payload));
         record.setUpdateTime(java.time.LocalDateTime.now());
         examRecordMapper.updateById(record);
+        if (studentId != null) {
+            if (refreshAcademicByExamRecords(studentId) == 0) {
+                examService.refreshAcademic(studentId);
+            }
+        }
     }
 
     public List<Map<String,Object>> examManage(Long teacherId, Long courseId) {
@@ -261,6 +269,7 @@ public class TeacherService {
     public void gradeExamByQuestion(Long teacherId, Long recordId, String questionScores, String comment) {
         ExamRecord record = examRecordMapper.selectById(recordId);
         if (record == null) throw new CustomException("考试记录不存在");
+        Long studentId = record.getStudentId();
         Exam exam = examMapper.selectById(record.getExamId());
         validateCourseOwner(exam.getCourseId(), teacherId);
         Map<String, Object> payload = readJson(record.getRemark());
@@ -274,6 +283,11 @@ public class TeacherService {
         record.setRemark(writeJson(payload));
         record.setUpdateTime(LocalDateTime.now());
         examRecordMapper.updateById(record);
+        if (studentId != null) {
+            if (refreshAcademicByExamRecords(studentId) == 0) {
+                examService.refreshAcademic(studentId);
+            }
+        }
     }
 
     private void validateCourseOwner(Long courseId, Long teacherId) {
@@ -281,6 +295,28 @@ public class TeacherService {
         if (c == null || !teacherId.equals(c.getTeacherId())) {
             throw new CustomException("无权限操作非本人课程");
         }
+    }
+
+    private int refreshAcademicByExamRecords(Long studentId) {
+        return jdbcTemplate.update("""
+                update student_academic sa
+                join (
+                    select ? as student_id,
+                           coalesce(round(avg(score) / 25.0, 2), 0) as gpa
+                    from exam_record
+                    where student_id = ?
+                      and score is not null
+                ) t on sa.student_id = t.student_id
+                set sa.gpa = t.gpa,
+                    sa.gpa_color = case
+                        when t.gpa < 1.5 then 'RED'
+                        when t.gpa < 2.0 then 'ORANGE'
+                        when t.gpa < 2.5 then 'YELLOW'
+                        else 'GREEN'
+                    end,
+                    sa.update_time = now()
+                where sa.student_id = ?
+                """, studentId, studentId, studentId);
     }
 
     private List<String> parseQuestions(String content, int score) {
