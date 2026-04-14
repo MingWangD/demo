@@ -1,9 +1,9 @@
 <template>
   <div class="home-page">
     <div class="card hero-card">
-      <div class="hero-title">学情智能预警系统</div>
+      <div class="hero-title">学业智能预警系统</div>
       <div class="hero-desc">
-        系统围绕学生学习行为采集、作业与考试管理、逻辑回归风险预测、预警分级展示和教师干预跟踪构建完整闭环。
+        系统围绕学生学业过程数据、教师维护的课程出勤、作业与考试管理、逻辑回归风险预测、预警分级展示和教师干预跟踪构建完整闭环。
       </div>
     </div>
 
@@ -11,13 +11,13 @@
       <el-col :span="8">
         <div class="card metric-card">
           <div class="metric-title">学生端</div>
-          <div class="metric-desc">查看课程、作业、考试、GPA、风险等级和趋势变化。</div>
+          <div class="metric-desc">查看已绑定课程、作业、考试、GPA、风险等级和趋势变化。</div>
         </div>
       </el-col>
       <el-col :span="8">
         <div class="card metric-card">
           <div class="metric-title">教师端</div>
-          <div class="metric-desc">管理课程作业考试，筛选高风险学生，维护干预记录。</div>
+          <div class="metric-desc">管理课程作业考试，维护学生出勤记录，筛选高风险学生并记录干预。</div>
         </div>
       </el-col>
       <el-col :span="8">

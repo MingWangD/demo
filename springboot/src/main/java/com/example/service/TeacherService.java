@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.algorithm.FeatureExtractor;
+import com.example.algorithm.RiskPredictor;
 import com.example.entity.*;
 import com.example.exception.CustomException;
 import com.example.mapper.*;
@@ -9,6 +11,7 @@ import jakarta.annotation.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,6 +29,8 @@ public class TeacherService {
     @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
     @Resource private ExamMapper examMapper;
     @Resource private ExamRecordMapper examRecordMapper;
+    @Resource private FeatureExtractor featureExtractor;
+    @Resource private RiskPredictor riskPredictor;
     @Resource private ExamService examService;
     @Resource private JdbcTemplate jdbcTemplate;
 
@@ -78,6 +83,52 @@ public class TeacherService {
         m.put("academic", academic);
         m.put("latestRisk", latest);
         return m;
+    }
+
+    public List<StudentAttendance> attendanceList(Long teacherId, Long courseId, Long studentId) {
+        validateCourseOwner(courseId, teacherId);
+        StudentAttendance query = new StudentAttendance();
+        query.setCourseId(courseId);
+        query.setStudentId(studentId);
+        return studentAttendanceMapper.selectAll(query);
+    }
+
+    public StudentAttendance saveAttendance(Long teacherId, StudentAttendance attendance) {
+        if (attendance.getCourseId() == null || attendance.getStudentId() == null) {
+            throw new CustomException("课程和学生不能为空");
+        }
+        validateCourseOwner(attendance.getCourseId(), teacherId);
+        if (sysUserMapper.selectById(attendance.getStudentId()) == null) {
+            throw new CustomException("学生不存在");
+        }
+        if (attendance.getAttendanceTime() == null) {
+            attendance.setAttendanceTime(LocalDateTime.now());
+        }
+        if (attendance.getAttendanceType() == null || attendance.getAttendanceType().isBlank()) {
+            attendance.setAttendanceType("MANUAL");
+        }
+        if (attendance.getId() == null) {
+            studentAttendanceMapper.insert(attendance);
+        } else {
+            StudentAttendance db = studentAttendanceMapper.selectById(attendance.getId());
+            if (db == null) {
+                throw new CustomException("出勤记录不存在");
+            }
+            validateCourseOwner(db.getCourseId(), teacherId);
+            studentAttendanceMapper.updateById(attendance);
+        }
+        refreshAttendanceDerivedData(attendance.getStudentId(), attendance.getCourseId());
+        return attendance.getId() == null ? attendance : studentAttendanceMapper.selectById(attendance.getId());
+    }
+
+    public void deleteAttendance(Long teacherId, Long attendanceId) {
+        StudentAttendance db = studentAttendanceMapper.selectById(attendanceId);
+        if (db == null) {
+            return;
+        }
+        validateCourseOwner(db.getCourseId(), teacherId);
+        studentAttendanceMapper.deleteById(attendanceId);
+        refreshAttendanceDerivedData(db.getStudentId(), db.getCourseId());
     }
 
     public Map<String, Object> highRisk(Long teacherId, Long courseId, String riskLevel, String gpaColor, Integer pageNum, Integer pageSize) {
@@ -287,6 +338,16 @@ public class TeacherService {
             if (refreshAcademicByExamRecords(studentId) == 0) {
                 examService.refreshAcademic(studentId);
             }
+        }
+    }
+
+    private void refreshAttendanceDerivedData(Long studentId, Long courseId) {
+        StudentFeature feature = featureExtractor.extractAndSave(studentId, courseId);
+        riskPredictor.predictAndSave(feature);
+        Exam examQuery = new Exam();
+        examQuery.setCourseId(courseId);
+        for (Exam exam : examMapper.selectAll(examQuery)) {
+            examService.recomputeQualification(exam.getId(), studentId);
         }
     }
 

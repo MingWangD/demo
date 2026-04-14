@@ -1,7 +1,23 @@
 package com.example.algorithm;
 
-import com.example.entity.*;
-import com.example.mapper.*;
+import com.example.entity.Course;
+import com.example.entity.Exam;
+import com.example.entity.ExamRecord;
+import com.example.entity.Homework;
+import com.example.entity.HomeworkSubmission;
+import com.example.entity.RiskPrediction;
+import com.example.entity.StudentAcademic;
+import com.example.entity.StudentAttendance;
+import com.example.entity.StudentFeature;
+import com.example.mapper.CourseMapper;
+import com.example.mapper.ExamMapper;
+import com.example.mapper.ExamRecordMapper;
+import com.example.mapper.HomeworkMapper;
+import com.example.mapper.HomeworkSubmissionMapper;
+import com.example.mapper.RiskPredictionMapper;
+import com.example.mapper.StudentAcademicMapper;
+import com.example.mapper.StudentAttendanceMapper;
+import com.example.mapper.StudentFeatureMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
@@ -16,14 +32,24 @@ import java.util.stream.Collectors;
 @Component
 public class FeatureExtractor {
 
-    @Resource private StudentAttendanceMapper attendanceMapper;
-    @Resource private StudentAcademicMapper academicMapper;
-    @Resource private HomeworkSubmissionMapper homeworkSubmissionMapper;
-    @Resource private HomeworkMapper homeworkMapper;
-    @Resource private ExamRecordMapper examRecordMapper;
-    @Resource private ExamMapper examMapper;
-    @Resource private RiskPredictionMapper riskPredictionMapper;
-    @Resource private StudentFeatureMapper studentFeatureMapper;
+    @Resource
+    private StudentAttendanceMapper attendanceMapper;
+    @Resource
+    private StudentAcademicMapper academicMapper;
+    @Resource
+    private HomeworkSubmissionMapper homeworkSubmissionMapper;
+    @Resource
+    private HomeworkMapper homeworkMapper;
+    @Resource
+    private ExamRecordMapper examRecordMapper;
+    @Resource
+    private ExamMapper examMapper;
+    @Resource
+    private RiskPredictionMapper riskPredictionMapper;
+    @Resource
+    private StudentFeatureMapper studentFeatureMapper;
+    @Resource
+    private CourseMapper courseMapper;
 
     public StudentFeature extractAndSave(Long studentId, Long courseId) {
         StudentFeature feature = extract(studentId, courseId);
@@ -32,16 +58,17 @@ public class FeatureExtractor {
     }
 
     public StudentFeature extract(Long studentId, Long courseId) {
-        StudentAttendance query = new StudentAttendance();
-        query.setStudentId(studentId);
-        query.setCourseId(courseId);
-        int attendanceCount = attendanceMapper.selectAll(query).size();
+        StudentAttendance attendanceQuery = new StudentAttendance();
+        attendanceQuery.setStudentId(studentId);
+        attendanceQuery.setCourseId(courseId);
+        int attendanceCount = attendanceMapper.selectAll(attendanceQuery).size();
 
-        Course course = null;
         int attendanceRequired = 10;
         if (courseId != null) {
-            // reuse exam mapper xml only not needed; keep generic
-            // attendanceRequired fallback for student-level
+            Course course = courseMapper.selectById(courseId);
+            if (course != null && course.getAttendanceRequiredCount() != null) {
+                attendanceRequired = course.getAttendanceRequiredCount();
+            }
         }
 
         Homework hwQuery = new Homework();
@@ -55,7 +82,9 @@ public class FeatureExtractor {
             List<HomeworkSubmission> submissions = homeworkSubmissionMapper.selectAll(new HomeworkSubmission()).stream()
                     .filter(s -> studentId.equals(s.getStudentId()) && homeworkIds.contains(s.getHomeworkId()))
                     .collect(Collectors.toList());
-            submittedHomework = (int) submissions.stream().filter(s -> "SUBMITTED".equals(s.getStatus()) || "GRADED".equals(s.getStatus())).count();
+            submittedHomework = (int) submissions.stream()
+                    .filter(s -> "SUBMITTED".equals(s.getStatus()) || "GRADED".equals(s.getStatus()))
+                    .count();
             List<BigDecimal> scores = submissions.stream()
                     .filter(s -> s.getScore() != null)
                     .map(s -> {
@@ -78,8 +107,11 @@ public class FeatureExtractor {
                 .filter(e -> studentId.equals(e.getStudentId()) && (courseId == null || examIds.contains(e.getExamId())))
                 .collect(Collectors.toList());
         int absentExamCount = (int) examRecords.stream().filter(e -> "ABSENT".equals(e.getStatus())).count();
-        BigDecimal examAvg = BigDecimal.valueOf(examRecords.stream().map(ExamRecord::getScore).filter(s -> s != null)
-                .mapToDouble(BigDecimal::doubleValue).average().orElse(0));
+        BigDecimal examAvg = BigDecimal.valueOf(examRecords.stream()
+                .map(ExamRecord::getScore)
+                .filter(s -> s != null)
+                .mapToDouble(BigDecimal::doubleValue)
+                .average().orElse(0));
 
         StudentAcademic academicQuery = new StudentAcademic();
         academicQuery.setStudentId(studentId);
@@ -87,10 +119,13 @@ public class FeatureExtractor {
 
         RiskPrediction riskQuery = new RiskPrediction();
         riskQuery.setStudentId(studentId);
-        String trend = riskPredictionMapper.selectAll(riskQuery).stream().limit(2)
+        String trend = riskPredictionMapper.selectAll(riskQuery).stream()
+                .limit(2)
                 .sorted(Comparator.comparing(RiskPrediction::getPredictTime, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
-                    if (list.size() < 2 || list.get(0).getRiskProbability() == null || list.get(1).getRiskProbability() == null) return "FLAT";
+                    if (list.size() < 2 || list.get(0).getRiskProbability() == null || list.get(1).getRiskProbability() == null) {
+                        return "FLAT";
+                    }
                     return list.get(0).getRiskProbability().compareTo(list.get(1).getRiskProbability()) >= 0 ? "UP" : "DOWN";
                 }));
 

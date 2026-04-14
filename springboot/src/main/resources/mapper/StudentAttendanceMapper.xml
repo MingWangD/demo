@@ -8,6 +8,7 @@
             <if test="id != null"> and id = #{id}</if>
             <if test="studentId != null"> and student_id = #{studentId}</if>
             <if test="courseId != null"> and course_id = #{courseId}</if>
+            <if test="attendanceType != null and attendanceType != ''"> and attendance_type = #{attendanceType}</if>
         </where>
         order by attendance_time desc, id desc
     </select>

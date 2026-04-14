@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import com.example.common.Result;
+import com.example.entity.StudentAttendance;
 import com.example.security.AuthContext;
 import com.example.service.TeacherService;
 import jakarta.annotation.Resource;
@@ -21,6 +22,22 @@ public class TeacherController {
     @GetMapping("/student-detail")
     public Result studentDetail(@RequestParam Long studentId, @RequestParam(required = false) Long courseId) {
         return Result.success(teacherService.studentDetail(AuthContext.userId(), studentId, courseId));
+    }
+
+    @GetMapping("/attendance")
+    public Result attendance(@RequestParam Long courseId, @RequestParam(required = false) Long studentId) {
+        return Result.success(teacherService.attendanceList(AuthContext.userId(), courseId, studentId));
+    }
+
+    @PostMapping("/attendance/save")
+    public Result saveAttendance(@RequestBody StudentAttendance attendance) {
+        return Result.success(teacherService.saveAttendance(AuthContext.userId(), attendance));
+    }
+
+    @DeleteMapping("/attendance/{id}")
+    public Result deleteAttendance(@PathVariable Long id) {
+        teacherService.deleteAttendance(AuthContext.userId(), id);
+        return Result.success();
     }
 
     @GetMapping("/course-students")

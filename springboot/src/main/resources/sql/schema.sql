@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `student_course` (
   `student_id` BIGINT NOT NULL,
   `course_id` BIGINT NOT NULL,
   `select_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` VARCHAR(20) NOT NULL DEFAULT 'SELECTED',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'BOUND',
   UNIQUE KEY `uk_student_course` (`student_id`, `course_id`),
   CONSTRAINT `fk_student_course_student` FOREIGN KEY (`student_id`) REFERENCES `sys_user` (`id`),
   CONSTRAINT `fk_student_course_course` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `student_attendance` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
   `student_id` BIGINT NOT NULL,
   `course_id` BIGINT NOT NULL,
-  `attendance_type` VARCHAR(20) NOT NULL COMMENT 'LOGIN/SIGN',
+  `attendance_type` VARCHAR(20) NOT NULL COMMENT 'MANUAL/IMPORT',
   `attendance_time` DATETIME NOT NULL,
   `week_no` INT NULL,
   `remark` VARCHAR(255) NULL,
