@@ -1,16 +1,39 @@
 <template>
   <div>
-    <el-select v-model="courseId" placeholder="切换当前课程" style="width:240px" @change="load">
-      <el-option v-for="c in courses" :key="c.id" :label="c.courseName" :value="c.id" />
+    <el-select v-model="courseId" placeholder="切换当前课程" style="width: 240px" @change="load">
+      <el-option v-for="course in courses" :key="course.id" :label="course.courseName" :value="course.id" />
     </el-select>
-    <el-table :data="list" style="margin-top:10px">
-      <el-table-column prop="examName" label="考试" />
-      <el-table-column prop="isQualified" label="资格" />
-      <el-table-column prop="qualificationReason" label="说明" />
-      <el-table-column prop="status" label="状态" />
+
+    <div class="card" style="margin-top: 10px; color: #606266">
+      当前规则：每门课只有期中考试和期末考试两类，最终成绩按期中 30% + 期末 70% 计算，最终成绩达到 60 分视为及格。
+    </div>
+
+    <el-table :data="list" style="margin-top: 10px">
+      <el-table-column prop="examName" label="考试名称" />
+      <el-table-column label="考试类型">
+        <template #default="scope">
+          {{ examTypeLabel(scope.row.examType) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="成绩权重">
+        <template #default="scope">
+          {{ weightText(scope.row.examType) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="考试资格">
+        <template #default="scope">
+          {{ yesNoLabel(scope.row.isQualified) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="qualificationReason" label="资格说明" />
+      <el-table-column label="考试状态">
+        <template #default="scope">
+          {{ examStatusLabel(scope.row.status) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="score" label="当前得分" />
       <el-table-column prop="autoJudgeRemark" label="判分说明" />
-      <el-table-column label="参加">
+      <el-table-column label="参加考试">
         <template #default="scope">
           <el-button :disabled="!scope.row.isQualified || scope.row.status === 'FINISHED'" @click="openSubmit(scope.row)">完成考试</el-button>
         </template>
@@ -20,23 +43,29 @@
     <el-dialog v-model="showDialog" title="考试作答" width="760px">
       <div v-if="current">
         <h4>{{ current.examName }}</h4>
-        <div v-for="(q, idx) in objectiveQuestions" :key="idx" style="margin-bottom:8px">
-          <div>{{ idx + 1 }}. {{ q }}</div>
-          <el-radio-group v-model="objectiveAnswers[idx]">
+        <div style="margin-bottom: 10px; color: #606266">
+          {{ examTypeLabel(current.examType) }}，成绩权重 {{ weightText(current.examType) }}
+        </div>
+
+        <div v-for="(question, index) in objectiveQuestions" :key="index" style="margin-bottom: 8px">
+          <div>{{ index + 1 }}. {{ question }}</div>
+          <el-radio-group v-model="objectiveAnswers[index]">
             <el-radio label="A">A</el-radio>
             <el-radio label="B">B</el-radio>
             <el-radio label="C">C</el-radio>
             <el-radio label="D">D</el-radio>
           </el-radio-group>
         </div>
-        <div style="margin-top:10px">
-          <div style="font-weight:600">主观题作答</div>
-          <div v-for="(q, idx) in subjectiveQuestions" :key="`es-${idx}`" style="margin-top:8px">
-            <div>{{ idx + 1 }}. {{ q }}</div>
-            <el-input v-model="subjectiveAnswers[idx]" type="textarea" :rows="2" placeholder="请输入主观题答案" />
+
+        <div style="margin-top: 10px">
+          <div style="font-weight: 600">主观题作答</div>
+          <div v-for="(question, index) in subjectiveQuestions" :key="`subject-${index}`" style="margin-top: 8px">
+            <div>{{ index + 1 }}. {{ question }}</div>
+            <el-input v-model="subjectiveAnswers[index]" type="textarea" :rows="2" placeholder="请输入主观题答案" />
           </div>
         </div>
       </div>
+
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
         <el-button type="primary" @click="submit">提交考试</el-button>
@@ -47,8 +76,9 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 import request from "@/utils/request";
-import { ElMessageBox } from "element-plus";
+import { examStatusLabel, examTypeLabel, yesNoLabel } from "@/utils/display";
 
 const user = JSON.parse(localStorage.getItem("system-user") || "{}");
 const courses = ref([]);
@@ -61,38 +91,39 @@ const objectiveAnswers = ref([]);
 const subjectiveQuestions = ref([]);
 const subjectiveAnswers = ref([]);
 
-const normalize = (content = "") => String(content).replace(/\\\\n/g, "\n");
+const normalize = (content = "") => String(content).replace(/\\n/g, "\n");
+const weightText = (type) => (type === "MIDTERM" ? "30%" : "70%");
 
 const loadCourses = async () => {
-  const r = await request.get("/api/student/courses", { params: { studentId: user.userId || user.id } });
-  courses.value = r.data || [];
+  const response = await request.get("/api/student/courses", { params: { studentId: user.userId || user.id } });
+  courses.value = response.data || [];
   if (courses.value.length) {
     courseId.value = courses.value[0].id;
-    load();
+    await load();
   }
 };
 
 const load = async () => {
-  const r = await request.get("/api/student/exams", {
+  const response = await request.get("/api/student/exams", {
     params: { studentId: user.userId || user.id, courseId: courseId.value }
   });
-  list.value = r.data || [];
+  list.value = response.data || [];
 };
 
 const openSubmit = (row) => {
   current.value = row;
-  const lines = normalize(row.description || "").split("\n").map((i) => i.trim()).filter(Boolean);
-  objectiveQuestions.value = lines.filter((i) => /（2分）|\(2分\)|客观题/.test(i));
-  subjectiveQuestions.value = lines.filter((i) => /（10分）|\(10分\)|主观题/.test(i));
+  const lines = normalize(row.description || "").split("\n").map((item) => item.trim()).filter(Boolean);
+  objectiveQuestions.value = lines.filter((item) => item.includes("（2分）") || item.includes("(2)") || item.includes("(2分)"));
+  subjectiveQuestions.value = lines.filter((item) => item.includes("（10分）") || item.includes("(10)") || item.includes("(10分)"));
   objectiveAnswers.value = Array(objectiveQuestions.value.length).fill("");
   subjectiveAnswers.value = Array(subjectiveQuestions.value.length).fill("");
   showDialog.value = true;
 };
 
 const submit = async () => {
-  await ElMessageBox.confirm("考试提交后客观题与主观题均不可修改，确定提交吗？", "提交确认", { type: "warning" });
+  await ElMessageBox.confirm("考试提交后不可修改，确定提交吗？", "提交确认", { type: "warning" });
   const objectiveAnswered = objectiveAnswers.value.filter(Boolean).length;
-  await request.post("/api/exam/submit", {
+  const response = await request.post("/api/exam/submit", {
     examId: current.value.examId,
     studentId: user.userId || user.id,
     score: 80,
@@ -103,8 +134,13 @@ const submit = async () => {
       objectiveLocked: true
     })
   });
+  if (response.code !== "200") {
+    ElMessage.error(response.msg || "考试提交失败");
+    return;
+  }
+  ElMessage.success("考试提交成功");
   showDialog.value = false;
-  load();
+  await load();
 };
 
 onMounted(loadCourses);

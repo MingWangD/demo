@@ -2,14 +2,41 @@ package com.example.service;
 
 import com.example.algorithm.FeatureExtractor;
 import com.example.algorithm.RiskPredictor;
-import com.example.entity.*;
-import com.example.mapper.*;
+import com.example.entity.Course;
+import com.example.entity.Exam;
+import com.example.entity.ExamQualification;
+import com.example.entity.ExamRecord;
+import com.example.entity.Homework;
+import com.example.entity.HomeworkSubmission;
+import com.example.entity.InterventionRecord;
+import com.example.entity.RiskPrediction;
+import com.example.entity.StudentAcademic;
+import com.example.entity.StudentAttendance;
+import com.example.entity.StudentCourse;
+import com.example.entity.StudentFeature;
+import com.example.entity.SysUser;
+import com.example.mapper.CourseMapper;
+import com.example.mapper.ExamMapper;
+import com.example.mapper.ExamQualificationMapper;
+import com.example.mapper.ExamRecordMapper;
+import com.example.mapper.HomeworkMapper;
+import com.example.mapper.HomeworkSubmissionMapper;
+import com.example.mapper.InterventionRecordMapper;
+import com.example.mapper.RiskPredictionMapper;
+import com.example.mapper.StudentAcademicMapper;
+import com.example.mapper.StudentAttendanceMapper;
+import com.example.mapper.StudentCourseMapper;
+import com.example.mapper.SysUserMapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,126 +58,171 @@ public class StudentService {
     @Resource private RiskPredictor riskPredictor;
 
     public Map<String, Object> overview(Long studentId) {
-        Map<String, Object> res = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         SysUser user = sysUserMapper.selectById(studentId);
-        StudentAcademic q = new StudentAcademic(); q.setStudentId(studentId);
-        StudentAcademic academic = studentAcademicMapper.selectAll(q).stream().findFirst().orElse(null);
-        RiskPrediction rq = new RiskPrediction(); rq.setStudentId(studentId);
-        RiskPrediction latestRisk = riskPredictionMapper.selectAll(rq).stream().findFirst().orElse(null);
-        StudentAttendance aq = new StudentAttendance(); aq.setStudentId(studentId);
-        int attendanceCount = studentAttendanceMapper.selectAll(aq).size();
+        StudentAcademic academicQuery = new StudentAcademic();
+        academicQuery.setStudentId(studentId);
+        StudentAcademic academic = studentAcademicMapper.selectAll(academicQuery).stream().findFirst().orElse(null);
+
+        RiskPrediction riskQuery = new RiskPrediction();
+        riskQuery.setStudentId(studentId);
+        RiskPrediction latestRisk = riskPredictionMapper.selectAll(riskQuery).stream().findFirst().orElse(null);
+
+        StudentAttendance attendanceQuery = new StudentAttendance();
+        attendanceQuery.setStudentId(studentId);
+        int attendanceCount = studentAttendanceMapper.selectAll(attendanceQuery).size();
 
         List<Long> courseIds = courses(studentId).stream().map(Course::getId).toList();
-        List<Long> homeworkIds = courseIds.isEmpty() ? List.of() : homeworkMapper.selectAll(new Homework()).stream()
-                .filter(h -> courseIds.contains(h.getCourseId()))
+        List<Long> homeworkIds = courseIds.isEmpty()
+                ? List.of()
+                : homeworkMapper.selectAll(new Homework()).stream()
+                .filter(homework -> courseIds.contains(homework.getCourseId()))
                 .map(Homework::getId)
                 .toList();
-        HomeworkSubmission hsq = new HomeworkSubmission(); hsq.setStudentId(studentId);
-        List<HomeworkSubmission> submissions = homeworkSubmissionMapper.selectAll(hsq).stream()
-                .filter(s -> homeworkIds.contains(s.getHomeworkId()))
+
+        HomeworkSubmission submissionQuery = new HomeworkSubmission();
+        submissionQuery.setStudentId(studentId);
+        List<HomeworkSubmission> submissions = homeworkSubmissionMapper.selectAll(submissionQuery).stream()
+                .filter(submission -> homeworkIds.contains(submission.getHomeworkId()))
                 .toList();
-        long submitted = submissions.stream().filter(s -> "SUBMITTED".equals(s.getStatus()) || "GRADED".equals(s.getStatus())).count();
-        BigDecimal submitRate = homeworkIds.isEmpty() ? BigDecimal.ZERO : BigDecimal.valueOf(submitted).divide(BigDecimal.valueOf(homeworkIds.size()), 4, RoundingMode.HALF_UP);
+        long submittedCount = submissions.stream()
+                .filter(submission -> "SUBMITTED".equals(submission.getStatus()) || "GRADED".equals(submission.getStatus()))
+                .count();
+        BigDecimal submitRate = homeworkIds.isEmpty()
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(submittedCount).divide(BigDecimal.valueOf(homeworkIds.size()), 4, RoundingMode.HALF_UP);
 
-        ExamRecord eq = new ExamRecord(); eq.setStudentId(studentId);
-        List<ExamRecord> records = examRecordMapper.selectAll(eq);
-        BigDecimal examAvg = BigDecimal.valueOf(records.stream().map(ExamRecord::getScore).filter(Objects::nonNull).mapToDouble(BigDecimal::doubleValue).average().orElse(0)).setScale(2, RoundingMode.HALF_UP);
+        List<BigDecimal> finalScores = courseIds.stream()
+                .map(courseId -> examService.calculateCourseFinalScore(studentId, courseId))
+                .filter(Objects::nonNull)
+                .toList();
+        BigDecimal finalScoreAvg = finalScores.isEmpty()
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(finalScores.stream().mapToDouble(BigDecimal::doubleValue).average().orElse(0D)).setScale(2, RoundingMode.HALF_UP);
 
-        res.put("user", user);
-        res.put("earnedCredit", academic == null ? BigDecimal.ZERO : academic.getEarnedCredit());
-        res.put("gpa", academic == null ? BigDecimal.ZERO : academic.getGpa());
-        res.put("gpaColor", academic == null ? "RED" : academic.getGpaColor());
-        res.put("riskProbability", latestRisk == null ? BigDecimal.ZERO : latestRisk.getRiskProbability());
-        res.put("riskLevel", latestRisk == null ? "LOW" : latestRisk.getRiskLevel());
-        res.put("warningColor", latestRisk == null ? "GREEN" : latestRisk.getWarningColor());
-        res.put("mainReason", latestRisk == null ? "暂无" : latestRisk.getMainReason());
-        res.put("attendanceCount", attendanceCount);
-        res.put("homeworkSubmitRate", submitRate);
-        res.put("examAvgScore", examAvg);
-        return res;
+        result.put("user", user);
+        result.put("earnedCredit", academic == null ? BigDecimal.ZERO : academic.getEarnedCredit());
+        result.put("gpa", academic == null ? BigDecimal.ZERO : academic.getGpa());
+        result.put("gpaColor", academic == null ? "GREEN" : academic.getGpaColor());
+        result.put("riskProbability", latestRisk == null ? BigDecimal.ZERO : latestRisk.getRiskProbability());
+        result.put("riskLevel", latestRisk == null ? "LOW" : latestRisk.getRiskLevel());
+        result.put("warningColor", latestRisk == null ? "GREEN" : latestRisk.getWarningColor());
+        result.put("mainReason", latestRisk == null ? "当前学习状态稳定" : latestRisk.getMainReason());
+        result.put("attendanceCount", attendanceCount);
+        result.put("homeworkSubmitRate", submitRate);
+        result.put("examAvgScore", finalScoreAvg);
+        result.put("finalScoreAvg", finalScoreAvg);
+        return result;
     }
 
     public List<Course> courses(Long studentId) {
-        StudentCourse query = new StudentCourse(); query.setStudentId(studentId);
+        StudentCourse query = new StudentCourse();
+        query.setStudentId(studentId);
         List<Long> courseIds = studentCourseMapper.selectAll(query).stream().map(StudentCourse::getCourseId).toList();
-        if (courseIds.isEmpty()) return Collections.emptyList();
-        return courseMapper.selectAll(new Course()).stream().filter(c -> courseIds.contains(c.getId())).collect(Collectors.toList());
+        if (courseIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return courseMapper.selectAll(new Course()).stream()
+                .filter(course -> courseIds.contains(course.getId()))
+                .collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> courseHomework(Long studentId, Long courseId) {
-        Homework q = new Homework(); q.setCourseId(courseId);
-        List<Homework> homeworkList = homeworkMapper.selectAll(q);
-        return homeworkList.stream().map(h -> {
-            HomeworkSubmission sub = homeworkSubmissionMapper.selectByHomeworkAndStudent(h.getId(), studentId);
-            Map<String, Object> m = new HashMap<>();
-            m.put("homework", h);
-            m.put("submission", sub);
-            return m;
+        Homework query = new Homework();
+        query.setCourseId(courseId);
+        return homeworkMapper.selectAll(query).stream().map(homework -> {
+            HomeworkSubmission submission = homeworkSubmissionMapper.selectByHomeworkAndStudent(homework.getId(), studentId);
+            Map<String, Object> map = new HashMap<>();
+            map.put("homework", homework);
+            map.put("submission", submission);
+            return map;
         }).toList();
     }
 
     public List<Map<String, Object>> courseExam(Long studentId, Long courseId) {
-        Exam q = new Exam(); q.setCourseId(courseId);
-        List<Exam> exams = examMapper.selectAll(q);
+        Exam query = new Exam();
+        query.setCourseId(courseId);
+        List<Exam> exams = examMapper.selectAll(query).stream()
+                .sorted((left, right) -> {
+                    int leftSort = ExamService.EXAM_TYPE_MIDTERM.equals(left.getExamType()) ? 0 : 1;
+                    int rightSort = ExamService.EXAM_TYPE_MIDTERM.equals(right.getExamType()) ? 0 : 1;
+                    return Integer.compare(leftSort, rightSort);
+                })
+                .toList();
+
         return exams.stream().map(exam -> {
             examService.recomputeQualification(exam.getId(), studentId);
             ExamQualification qualification = examQualificationMapper.selectByExamAndStudent(exam.getId(), studentId);
             ExamRecord record = examRecordMapper.selectByExamAndStudent(exam.getId(), studentId);
-            Map<String, Object> m = new HashMap<>();
-            m.put("examId", exam.getId());
-            m.put("examName", exam.getExamName());
-            m.put("examTime", exam.getExamTime());
-            m.put("description", exam.getDescription());
-            m.put("isQualified", qualification != null && Boolean.TRUE.equals(qualification.getIsQualified()));
-            m.put("qualificationReason", qualification == null ? "未生成资格" : qualification.getReason());
-            m.put("score", record == null ? null : record.getScore());
-            m.put("status", record == null ? "NOT_JOINED" : record.getStatus());
-            m.put("autoJudgeRemark", record == null ? null : parseExamRemark(record.getRemark()));
-            m.put("submitTime", record == null ? null : record.getSubmitTime());
-            return m;
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("examId", exam.getId());
+            map.put("examName", exam.getExamName());
+            map.put("examType", exam.getExamType());
+            map.put("examWeight", examService.examWeight(exam.getExamType()));
+            map.put("examTime", exam.getExamTime());
+            map.put("description", exam.getDescription());
+            boolean qualified = qualification != null && Boolean.TRUE.equals(qualification.getIsQualified());
+            map.put("isQualified", qualified);
+            map.put("qualified", qualified);
+            map.put("qualificationReason", qualification == null ? "未生成考试资格" : qualification.getReason());
+            map.put("score", record == null ? null : record.getScore());
+            map.put("status", record == null ? "NOT_JOINED" : record.getStatus());
+            map.put("autoJudgeRemark", record == null ? null : parseExamRemark(record.getRemark()));
+            map.put("submitTime", record == null ? null : record.getSubmitTime());
+            return map;
         }).toList();
     }
 
     public Map<String, Object> riskDetail(Long studentId) {
-        RiskPrediction q = new RiskPrediction(); q.setStudentId(studentId);
-        StudentAcademic aq = new StudentAcademic(); aq.setStudentId(studentId);
-        StudentAcademic academic = studentAcademicMapper.selectAll(aq).stream().findFirst().orElse(null);
-        RiskPrediction rp = riskPredictionMapper.selectAll(q).stream().findFirst().orElse(null);
-        InterventionRecord iq = new InterventionRecord(); iq.setStudentId(studentId);
-        InterventionRecord latestIntervention = interventionRecordMapper.selectAll(iq).stream().findFirst().orElse(null);
+        RiskPrediction riskQuery = new RiskPrediction();
+        riskQuery.setStudentId(studentId);
+        StudentAcademic academicQuery = new StudentAcademic();
+        academicQuery.setStudentId(studentId);
 
-        Map<String, Object> m = new HashMap<>();
-        m.put("risk", rp);
-        m.put("academic", academic);
-        m.put("latestIntervention", latestIntervention);
-        return m;
+        StudentAcademic academic = studentAcademicMapper.selectAll(academicQuery).stream().findFirst().orElse(null);
+        RiskPrediction risk = riskPredictionMapper.selectAll(riskQuery).stream().findFirst().orElse(null);
+
+        InterventionRecord interventionQuery = new InterventionRecord();
+        interventionQuery.setStudentId(studentId);
+        InterventionRecord latestIntervention = interventionRecordMapper.selectAll(interventionQuery).stream().findFirst().orElse(null);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("risk", risk);
+        map.put("academic", academic);
+        map.put("latestIntervention", latestIntervention);
+        return map;
     }
 
     public Map<String, Object> trend(Long studentId) {
-        RiskPrediction rq = new RiskPrediction(); rq.setStudentId(studentId);
-        List<RiskPrediction> predictions = riskPredictionMapper.selectAll(rq).stream().limit(30).toList();
+        RiskPrediction riskQuery = new RiskPrediction();
+        riskQuery.setStudentId(studentId);
+        List<RiskPrediction> predictions = riskPredictionMapper.selectAll(riskQuery).stream().limit(30).toList();
 
-        StudentAcademic aq = new StudentAcademic(); aq.setStudentId(studentId);
-        StudentAcademic academic = studentAcademicMapper.selectAll(aq).stream().findFirst().orElse(null);
+        StudentAcademic academicQuery = new StudentAcademic();
+        academicQuery.setStudentId(studentId);
+        StudentAcademic academic = studentAcademicMapper.selectAll(academicQuery).stream().findFirst().orElse(null);
 
-        ExamRecord eq = new ExamRecord(); eq.setStudentId(studentId);
-        List<ExamRecord> exams = examRecordMapper.selectAll(eq).stream().limit(30).toList();
+        ExamRecord examRecordQuery = new ExamRecord();
+        examRecordQuery.setStudentId(studentId);
+        List<ExamRecord> examRecords = examRecordMapper.selectAll(examRecordQuery).stream().limit(30).toList();
 
-        HomeworkSubmission hq = new HomeworkSubmission(); hq.setStudentId(studentId);
-        List<HomeworkSubmission> homeworks = homeworkSubmissionMapper.selectAll(hq).stream().limit(30).toList();
+        HomeworkSubmission homeworkSubmissionQuery = new HomeworkSubmission();
+        homeworkSubmissionQuery.setStudentId(studentId);
+        List<HomeworkSubmission> homeworkSubmissions = homeworkSubmissionMapper.selectAll(homeworkSubmissionQuery).stream().limit(30).toList();
 
-        Map<String, Object> m = new HashMap<>();
-        m.put("risk", predictions);
-        m.put("gpa", academic == null ? List.of() : List.of(academic.getGpa()));
-        m.put("examScores", exams.stream().map(ExamRecord::getScore).toList());
-        m.put("homeworkScores", homeworks.stream().map(HomeworkSubmission::getScore).toList());
-        return m;
+        Map<String, Object> map = new HashMap<>();
+        map.put("risk", predictions);
+        map.put("gpa", academic == null ? List.of() : List.of(academic.getGpa()));
+        map.put("examScores", examRecords.stream().map(ExamRecord::getScore).toList());
+        map.put("homeworkScores", homeworkSubmissions.stream().map(HomeworkSubmission::getScore).toList());
+        return map;
     }
 
-
     public void updateAcademic(Long studentId, BigDecimal earnedCredit, BigDecimal gpa, String gpaColor) {
-        StudentAcademic q = new StudentAcademic(); q.setStudentId(studentId);
-        StudentAcademic academic = studentAcademicMapper.selectAll(q).stream().findFirst().orElse(null);
+        StudentAcademic query = new StudentAcademic();
+        query.setStudentId(studentId);
+        StudentAcademic academic = studentAcademicMapper.selectAll(query).stream().findFirst().orElse(null);
         if (academic == null) {
             academic = new StudentAcademic();
             academic.setStudentId(studentId);
@@ -164,23 +236,26 @@ public class StudentService {
         academic.setUpdateTime(java.time.LocalDateTime.now());
         studentAcademicMapper.updateById(academic);
 
-        for (Course c : courses(studentId)) {
-            StudentFeature f = featureExtractor.extractAndSave(studentId, c.getId());
-            riskPredictor.predictAndSave(f);
+        for (Course course : courses(studentId)) {
+            StudentFeature feature = featureExtractor.extractAndSave(studentId, course.getId());
+            riskPredictor.predictAndSave(feature);
         }
     }
 
     private String parseExamRemark(String remark) {
-        if (remark == null || remark.isEmpty()) return "";
-        if (!remark.trim().startsWith("{")) return remark;
+        if (remark == null || remark.isEmpty()) {
+            return "";
+        }
+        if (!remark.trim().startsWith("{")) {
+            return remark;
+        }
         try {
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            java.util.Map<String, Object> m = mapper.readValue(remark, java.util.Map.class);
-            Object message = m.get("message");
+            java.util.Map<String, Object> payload = mapper.readValue(remark, java.util.Map.class);
+            Object message = payload.get("message");
             return message == null ? remark : String.valueOf(message);
         } catch (Exception e) {
             return remark;
         }
     }
-
 }

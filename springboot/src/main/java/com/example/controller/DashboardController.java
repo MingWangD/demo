@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import com.example.common.Result;
+import com.example.security.AuthContext;
 import com.example.service.DashboardService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,5 +14,5 @@ public class DashboardController {
     @Resource private DashboardService dashboardService;
 
     @GetMapping("/teacher")
-    public Result teacher() { return Result.success(dashboardService.teacherDashboard()); }
+    public Result teacher() { return Result.success(dashboardService.teacherDashboard(AuthContext.userId())); }
 }

@@ -16,6 +16,9 @@ TRUNCATE TABLE sys_user;
 SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO sys_user (id, username, password, name, role, student_no, teacher_no, college, major, class_name, status, avatar)
+VALUES (9001, 'admin', '123456', '系统管理员', 'ADMIN', NULL, 'ADMIN001', '系统管理中心', NULL, NULL, 'ACTIVE', NULL);
+
+INSERT INTO sys_user (id, username, password, name, role, student_no, teacher_no, college, major, class_name, status, avatar)
 VALUES
 (1, 't_zhang', '123456', '张老师', 'TEACHER', NULL, 'T2026001', '计算机学院', NULL, NULL, 'ACTIVE', NULL),
 (2, 't_li', '123456', '李老师', 'TEACHER', NULL, 'T2026002', '信息工程学院', NULL, NULL, 'ACTIVE', NULL),

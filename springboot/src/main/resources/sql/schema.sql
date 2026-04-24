@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
   `username` VARCHAR(64) NOT NULL UNIQUE,
   `password` VARCHAR(128) NOT NULL,
   `name` VARCHAR(64) NOT NULL,
-  `role` VARCHAR(20) NOT NULL COMMENT 'STUDENT/TEACHER',
+  `role` VARCHAR(20) NOT NULL COMMENT 'STUDENT/TEACHER/ADMIN',
   `student_no` VARCHAR(32) NULL,
   `teacher_no` VARCHAR(32) NULL,
   `college` VARCHAR(100) NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `student_attendance` (
   `attendance_type` VARCHAR(20) NOT NULL COMMENT 'MANUAL/IMPORT',
   `attendance_time` DATETIME NOT NULL,
   `week_no` INT NULL,
-  `remark` VARCHAR(255) NULL,
+  `remark` TEXT NULL,
   CONSTRAINT `fk_attendance_student` FOREIGN KEY (`student_id`) REFERENCES `sys_user` (`id`),
   CONSTRAINT `fk_attendance_course` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -90,12 +90,14 @@ CREATE TABLE IF NOT EXISTS `exam` (
   `course_id` BIGINT NOT NULL,
   `teacher_id` BIGINT NOT NULL,
   `exam_name` VARCHAR(120) NOT NULL,
+  `exam_type` VARCHAR(20) NOT NULL COMMENT 'MIDTERM/FINAL',
   `exam_time` DATETIME NOT NULL,
   `total_score` DECIMAL(5,2) NOT NULL DEFAULT 100,
   `duration_minutes` INT NOT NULL DEFAULT 120,
-  `description` VARCHAR(500) NULL,
+  `description` TEXT NULL,
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `uk_exam_course_type` (`course_id`, `exam_type`),
   CONSTRAINT `fk_exam_course` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
   CONSTRAINT `fk_exam_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sys_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

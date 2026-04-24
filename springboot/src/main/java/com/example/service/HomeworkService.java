@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,18 +67,21 @@ public class HomeworkService {
         java.util.Map<String, Object> incoming = readJson(req.getSubmitContent());
         java.util.Map<String, Object> existing = readJson(old.getSubmitContent());
         boolean objectiveLocked = Boolean.TRUE.equals(existing.get("objectiveLocked"));
-        int objectiveQuestionCount = countObjectiveQuestions(hw.getContent());
-        int rawObjectiveAnswered = num(objectiveLocked ? existing.get("objectiveAnswered") : incoming.get("objectiveAnswered"));
-        int objectiveAnswered = Math.max(0, Math.min(rawObjectiveAnswered, objectiveQuestionCount));
-        int objectiveScoreInt = objectiveAnswered * 2;
+        List<String> objectiveQuestions = parseQuestions(hw.getContent(), TWO_POINT_QUESTION_PATTERN);
+        List<String> objectiveCorrectAnswers = parseObjectiveCorrectAnswers(objectiveQuestions);
+        List<Object> objectiveDetail = list(objectiveLocked ? existing.get("objectiveDetail") : incoming.get("objectiveDetail"));
+        int objectiveAnswered = (int) objectiveDetail.stream().filter(Objects::nonNull).map(String::valueOf).map(String::trim).filter(s -> !s.isEmpty()).count();
+        int objectiveCorrect = countObjectiveCorrectAnswers(objectiveDetail, objectiveCorrectAnswers);
+        int objectiveScoreInt = Math.min(objectiveCorrect * 2, 100);
         Object subjectiveAnswers = incoming.get("subjectiveAnswers");
         if (subjectiveAnswers == null) subjectiveAnswers = existing.get("subjectiveAnswers");
         if (subjectiveAnswers == null) subjectiveAnswers = java.util.List.of(String.valueOf(incoming.getOrDefault("subjectiveAnswer", existing.getOrDefault("subjectiveAnswer", ""))));
         java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
         payload.put("objectiveLocked", true);
         payload.put("objectiveAnswered", objectiveAnswered);
+        payload.put("objectiveCorrect", objectiveCorrect);
         payload.put("objectiveScore", objectiveScoreInt);
-        payload.put("objectiveDetail", objectiveLocked ? existing.get("objectiveDetail") : incoming.get("objectiveDetail"));
+        payload.put("objectiveDetail", objectiveDetail);
         payload.put("subjectiveAnswers", subjectiveAnswers);
         old.setSubmitContent(writeJson(payload));
         old.setSubmitTime(now);
@@ -113,11 +117,49 @@ public class HomeworkService {
         return countScoreTaggedQuestions(text, TWO_POINT_QUESTION_PATTERN);
     }
 
+    private List<String> parseQuestions(String content, Pattern pattern) {
+        if (content == null || content.isEmpty()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(content.replace("\\n", "\n").split("\n"))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .filter(item -> pattern.matcher(item).find())
+                .toList();
+    }
+
     private int countScoreTaggedQuestions(String text, Pattern pattern) {
         if (text == null || text.isEmpty()) return 0;
         int count = 0;
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) count++;
+        return count;
+    }
+
+    private List<String> parseObjectiveCorrectAnswers(List<String> questions) {
+        if (questions == null) {
+            return List.of();
+        }
+        List<String> fallback = List.of("A", "B", "C", "D");
+        return questions.stream().map(question -> {
+            Matcher matcher = Pattern.compile("答案\\s*[:：]?\\s*([A-D])", Pattern.CASE_INSENSITIVE).matcher(question);
+            if (matcher.find()) {
+                return matcher.group(1).toUpperCase(Locale.ROOT);
+            }
+            return fallback.get(Math.abs(question.hashCode()) % fallback.size());
+        }).toList();
+    }
+
+    private int countObjectiveCorrectAnswers(List<Object> objectiveDetail, List<String> objectiveCorrectAnswers) {
+        int size = Math.min(objectiveDetail.size(), objectiveCorrectAnswers.size());
+        int count = 0;
+        for (int i = 0; i < size; i++) {
+            String answer = String.valueOf(objectiveDetail.get(i) == null ? "" : objectiveDetail.get(i)).trim().toUpperCase(Locale.ROOT);
+            String correct = String.valueOf(objectiveCorrectAnswers.get(i) == null ? "" : objectiveCorrectAnswers.get(i)).trim().toUpperCase(Locale.ROOT);
+            if (!answer.isEmpty() && answer.equals(correct)) {
+                count++;
+            }
+        }
         return count;
     }
 
@@ -142,6 +184,13 @@ public class HomeworkService {
         if (v == null) return 0;
         if (v instanceof Number n) return n.intValue();
         try { return Integer.parseInt(String.valueOf(v)); } catch (Exception e) { return 0; }
+    }
+
+    private List<Object> list(Object value) {
+        if (value instanceof List<?> list) {
+            return new java.util.ArrayList<>(list);
+        }
+        return new java.util.ArrayList<>();
     }
 
 

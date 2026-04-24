@@ -21,13 +21,13 @@ public class JwtInterceptor implements HandlerInterceptor {
 
         String auth = request.getHeader("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
-            write401(response, "未登录或token缺失");
+            write401(response, "未登录或 token 缺失");
             return false;
         }
         String token = auth.substring(7);
         JWT jwt = JwtUtils.verify(token);
         if (jwt == null) {
-            write401(response, "token无效或已过期");
+            write401(response, "token 无效或已过期");
             return false;
         }
 
@@ -41,6 +41,10 @@ public class JwtInterceptor implements HandlerInterceptor {
         }
         if (uri.startsWith("/api/teacher") && !"TEACHER".equals(role)) {
             write401(response, "无教师端权限");
+            return false;
+        }
+        if (uri.startsWith("/api/admin") && !"ADMIN".equals(role)) {
+            write401(response, "无管理员权限");
             return false;
         }
         if ((uri.startsWith("/api/homework/create") || uri.startsWith("/api/exam/create") || uri.startsWith("/api/dashboard")) && !"TEACHER".equals(role)) {

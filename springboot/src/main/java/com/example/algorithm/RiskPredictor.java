@@ -24,6 +24,7 @@ public class RiskPredictor {
         BigDecimal probability = logisticRegression.predictProbability(feature);
         boolean gpaHighRisk = feature.getGpa() != null && feature.getGpa().compareTo(new BigDecimal("1.5")) < 0;
         boolean gpaMediumRisk = feature.getGpa() != null && feature.getGpa().compareTo(new BigDecimal("2.0")) < 0;
+
         RiskPrediction prediction = new RiskPrediction();
         prediction.setStudentId(feature.getStudentId());
         prediction.setCourseId(feature.getCourseId());
@@ -44,7 +45,7 @@ public class RiskPredictor {
         }
 
         prediction.setMainReason(buildReason(feature));
-        prediction.setModelVersion("LR-1.1.0");
+        prediction.setModelVersion("LR-1.2.0");
         prediction.setPredictTime(LocalDateTime.now());
         prediction.setCreateTime(LocalDateTime.now());
         riskPredictionMapper.insert(prediction);
@@ -60,17 +61,23 @@ public class RiskPredictor {
         warning.setCreateTime(LocalDateTime.now());
         warning.setUpdateTime(LocalDateTime.now());
         warningRecordMapper.insert(warning);
-
         return prediction;
     }
 
-    private String buildReason(StudentFeature f) {
+    private String buildReason(StudentFeature feature) {
         List<String> reasons = new ArrayList<>();
-        if (f.getAttendanceRate() != null && f.getAttendanceRate().compareTo(new BigDecimal("0.67")) < 0) reasons.add("出勤次数偏低");
-        if (f.getHomeworkSubmitRate() != null && f.getHomeworkSubmitRate().compareTo(new BigDecimal("0.70")) < 0) reasons.add("作业提交率低");
-        if (f.getHomeworkAvgScore() != null && f.getHomeworkAvgScore().compareTo(new BigDecimal("70")) < 0) reasons.add("作业平均分偏低");
-        if (f.getExamAvgScore() != null && f.getExamAvgScore().compareTo(new BigDecimal("70")) < 0) reasons.add("考试平均分偏低");
-        if (f.getGpa() != null && f.getGpa().compareTo(new BigDecimal("2.0")) < 0) reasons.add("GPA低于预警区间");
-        return reasons.isEmpty() ? "学习状态稳定" : String.join("；", reasons);
+        if (feature.getAttendanceRate() != null && feature.getAttendanceRate().compareTo(new BigDecimal("0.67")) < 0) {
+            reasons.add("出勤次数偏低");
+        }
+        if (feature.getHomeworkSubmitRate() != null && feature.getHomeworkSubmitRate().compareTo(new BigDecimal("0.70")) < 0) {
+            reasons.add("作业提交率低");
+        }
+        if (feature.getHomeworkAvgScore() != null && feature.getHomeworkAvgScore().compareTo(new BigDecimal("70")) < 0) {
+            reasons.add("作业平均分偏低");
+        }
+        if (feature.getGpa() != null && feature.getGpa().compareTo(new BigDecimal("2.0")) < 0) {
+            reasons.add("GPA低于学业预警区间");
+        }
+        return reasons.isEmpty() ? "当前学习状态稳定" : String.join("，", reasons);
     }
 }

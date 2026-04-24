@@ -13,5 +13,7 @@ public interface SysUserMapper {
     List<SysUser> selectAll(SysUser entity);
 
     SysUser selectByUsername(@Param("username") String username);
+    SysUser selectByStudentNo(@Param("studentNo") String studentNo);
+    SysUser selectByTeacherNo(@Param("teacherNo") String teacherNo);
     List<SysUser> selectByRole(@Param("role") String role);
 }

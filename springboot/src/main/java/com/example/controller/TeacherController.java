@@ -29,6 +29,24 @@ public class TeacherController {
         return Result.success(teacherService.attendanceList(AuthContext.userId(), courseId, studentId));
     }
 
+    @GetMapping("/attendance/stats")
+    public Result attendanceStats(@RequestParam Long courseId) {
+        return Result.success(teacherService.attendanceStats(AuthContext.userId(), courseId));
+    }
+
+    @PostMapping("/attendance/required-count")
+    public Result updateAttendanceRequiredCount(@RequestParam Long courseId,
+                                                @RequestParam Integer attendanceRequiredCount) {
+        return Result.success(teacherService.updateAttendanceRequiredCount(AuthContext.userId(), courseId, attendanceRequiredCount));
+    }
+
+    @PostMapping("/attendance/change")
+    public Result changeAttendance(@RequestParam Long courseId,
+                                   @RequestParam Long studentId,
+                                   @RequestParam Integer delta) {
+        return Result.success(teacherService.changeAttendanceCount(AuthContext.userId(), courseId, studentId, delta));
+    }
+
     @PostMapping("/attendance/save")
     public Result saveAttendance(@RequestBody StudentAttendance attendance) {
         return Result.success(teacherService.saveAttendance(AuthContext.userId(), attendance));

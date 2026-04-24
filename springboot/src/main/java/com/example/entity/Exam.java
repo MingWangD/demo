@@ -8,6 +8,7 @@ public class Exam {
     private Long courseId;
     private Long teacherId;
     private String examName;
+    private String examType;
     private LocalDateTime examTime;
     private BigDecimal totalScore;
     private Integer durationMinutes;
@@ -45,6 +46,14 @@ public class Exam {
 
     public void setExamName(String examName) {
         this.examName = examName;
+    }
+
+    public String getExamType() {
+        return examType;
+    }
+
+    public void setExamType(String examType) {
+        this.examType = examType;
     }
 
     public LocalDateTime getExamTime() {
