@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="manager-shell">
     <div class="topbar">
       <div class="brand">学业预警系统</div>
       <div class="user-info">{{ data.user.name || "-" }}（{{ roleLabel(data.user.role) }}）</div>
@@ -92,40 +92,68 @@ onMounted(async () => {
 
 <style scoped>
 .topbar {
-  height: 60px;
-  background-color: #2e3143;
+  height: 64px;
+  background: linear-gradient(90deg, #133b44 0%, #1d5661 100%);
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid rgba(19, 59, 68, 0.08);
+  box-shadow: 0 10px 30px rgba(19, 59, 68, 0.08);
 }
 
 .brand {
   flex: 1;
-  padding-left: 20px;
+  padding-left: 24px;
   color: #fff;
   font-size: 24px;
-  font-weight: bold;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .user-info {
-  padding-right: 10px;
-  color: #fff;
+  padding-right: 18px;
+  color: rgba(255, 250, 240, 0.92);
+  font-weight: 500;
 }
 
 .layout {
   display: flex;
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(180deg, #f6f3ee 0%, #eef3f2 100%);
 }
 
 .sider {
   width: 240px;
-  border-right: 1px solid #ddd;
-  min-height: calc(100vh - 60px);
+  padding: 14px 12px;
+  border-right: 1px solid rgba(19, 59, 68, 0.08);
+  min-height: calc(100vh - 64px);
+  background: rgba(255, 253, 248, 0.9);
+  backdrop-filter: blur(6px);
 }
 
 .content {
   flex: 1;
   width: 0;
-  background-color: #f8f8ff;
-  padding: 10px;
+  padding: 16px;
+}
+
+:deep(.el-menu) {
+  background: transparent;
+}
+
+:deep(.el-menu-item) {
+  margin-bottom: 6px;
+  border-radius: 12px;
+  color: #506462;
+}
+
+:deep(.el-menu-item:hover) {
+  background: rgba(15, 118, 110, 0.08);
+  color: #133b44;
+}
+
+:deep(.el-menu-item.is-active) {
+  background: linear-gradient(90deg, rgba(15, 118, 110, 0.12), rgba(217, 164, 65, 0.16));
+  color: #133b44;
+  font-weight: 700;
 }
 </style>

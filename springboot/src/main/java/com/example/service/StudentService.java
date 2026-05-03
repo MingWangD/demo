@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -92,10 +93,20 @@ public class StudentService {
                 ? BigDecimal.ZERO
                 : BigDecimal.valueOf(submittedCount).divide(BigDecimal.valueOf(homeworkIds.size()), 4, RoundingMode.HALF_UP);
 
-        List<BigDecimal> finalScores = courseIds.stream()
-                .map(courseId -> examService.calculateCourseFinalScore(studentId, courseId))
-                .filter(Objects::nonNull)
-                .toList();
+        List<Map<String, Object>> courseFinalScores = new ArrayList<>();
+        List<BigDecimal> finalScores = new ArrayList<>();
+        for (Course course : courses(studentId)) {
+            BigDecimal finalScore = examService.calculateCourseFinalScore(studentId, course.getId());
+            Map<String, Object> courseScore = new HashMap<>();
+            courseScore.put("courseId", course.getId());
+            courseScore.put("courseName", course.getCourseName());
+            courseScore.put("finalScore", finalScore == null ? BigDecimal.ZERO : finalScore);
+            courseScore.put("hasFinalScore", finalScore != null);
+            courseFinalScores.add(courseScore);
+            if (finalScore != null) {
+                finalScores.add(finalScore);
+            }
+        }
         BigDecimal finalScoreAvg = finalScores.isEmpty()
                 ? BigDecimal.ZERO
                 : BigDecimal.valueOf(finalScores.stream().mapToDouble(BigDecimal::doubleValue).average().orElse(0D)).setScale(2, RoundingMode.HALF_UP);
@@ -112,6 +123,7 @@ public class StudentService {
         result.put("homeworkSubmitRate", submitRate);
         result.put("examAvgScore", finalScoreAvg);
         result.put("finalScoreAvg", finalScoreAvg);
+        result.put("courseFinalScores", courseFinalScores);
         return result;
     }
 

@@ -18,9 +18,24 @@
       </el-col>
       <el-col :span="8">
         <div :class="['card', 'metric', metricClassName]">
-          <div>课程最终成绩均分</div>
-          <h2>{{ data.finalScoreAvg || data.examAvgScore || 0 }}</h2>
-          <div>期中 30% + 期末 70%</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+            <span>课程最终成绩</span>
+            <el-select
+              v-model="selectedCourseId"
+              placeholder="选择课程"
+              size="small"
+              style="width: 180px"
+            >
+              <el-option
+                v-for="course in courseFinalScores"
+                :key="course.courseId"
+                :label="course.courseName"
+                :value="String(course.courseId)"
+              />
+            </el-select>
+          </div>
+          <h2>{{ selectedCourseScore }}</h2>
+          <div>{{ selectedCourseHint }}</div>
         </div>
       </el-col>
     </el-row>
@@ -40,12 +55,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import request from "@/utils/request";
 import { gpaColorLabel } from "@/utils/display";
 
 const user = JSON.parse(localStorage.getItem("system-user") || "{}");
 const data = reactive({});
+const selectedCourseId = ref("");
 
 const gpaTagType = computed(() => {
   if ((data.gpaColor || "").toUpperCase() === "RED") return "danger";
@@ -61,6 +77,35 @@ const displayReason = computed(() => {
   return data.mainReason;
 });
 
+const courseFinalScores = computed(() => Array.isArray(data.courseFinalScores) ? data.courseFinalScores : []);
+
+const selectedCourse = computed(() => {
+  if (!courseFinalScores.value.length) return null;
+  return courseFinalScores.value.find((item) => String(item.courseId) === String(selectedCourseId.value)) || courseFinalScores.value[0];
+});
+
+const selectedCourseScore = computed(() => {
+  if (!selectedCourse.value) return 0;
+  return selectedCourse.value.finalScore ?? 0;
+});
+
+const selectedCourseHint = computed(() => {
+  if (!selectedCourse.value) return "暂无课程成绩";
+  if (selectedCourse.value.hasFinalScore === false) return "该课程暂无可展示的最终成绩";
+  return "期中 30% + 期末 70%";
+});
+
+watch(courseFinalScores, (list) => {
+  if (!list.length) {
+    selectedCourseId.value = "";
+    return;
+  }
+  const exists = list.some((item) => String(item.courseId) === String(selectedCourseId.value));
+  if (!exists) {
+    selectedCourseId.value = String(list[0].courseId);
+  }
+}, { immediate: true });
+
 onMounted(async () => {
   const response = await request.get("/api/student/overview", { params: { studentId: user.userId || user.id } });
   Object.assign(data, response.data || {});
@@ -70,6 +115,9 @@ onMounted(async () => {
 <style scoped>
 .metric h2 { margin: 8px 0; color: #303133; }
 .metric { color: #fff; border-radius: 12px; }
+.metric :deep(.el-select .el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.95);
+}
 .metric-green { background: linear-gradient(135deg, #43e97b, #38f9d7); }
 .metric-yellow { background: linear-gradient(135deg, #ffd86f, #fc6262); }
 .metric-orange { background: linear-gradient(135deg, #ff9a44, #fc6076); }

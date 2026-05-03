@@ -47,13 +47,16 @@
           {{ examTypeLabel(current.examType) }}，成绩权重 {{ weightText(current.examType) }}
         </div>
 
-        <div v-for="(question, index) in objectiveQuestions" :key="index" style="margin-bottom: 8px">
+        <div v-for="(question, index) in objectiveQuestions" :key="index" style="margin-bottom: 12px">
           <div>{{ index + 1 }}. {{ question }}</div>
           <el-radio-group v-model="objectiveAnswers[index]">
-            <el-radio label="A">A</el-radio>
-            <el-radio label="B">B</el-radio>
-            <el-radio label="C">C</el-radio>
-            <el-radio label="D">D</el-radio>
+            <el-radio
+              v-for="option in objectiveOptions[index] || []"
+              :key="option.key"
+              :value="option.key"
+            >
+              {{ option.key }}. {{ option.text }}
+            </el-radio>
           </el-radio-group>
         </div>
 
@@ -87,12 +90,48 @@ const list = ref([]);
 const showDialog = ref(false);
 const current = ref(null);
 const objectiveQuestions = ref([]);
+const objectiveOptions = ref([]);
 const objectiveAnswers = ref([]);
 const subjectiveQuestions = ref([]);
 const subjectiveAnswers = ref([]);
 
+const optionPool = [
+  "时间复杂度更优",
+  "空间开销更小",
+  "鲁棒性更强",
+  "可维护性更高",
+  "便于并行处理",
+  "更符合题干约束",
+  "边界条件更完整",
+  "结果更稳定",
+  "实现成本更低",
+  "可解释性更好",
+  "与业务目标一致",
+  "满足数据规模要求"
+];
+
 const normalize = (content = "") => String(content).replace(/\\n/g, "\n");
 const weightText = (type) => (type === "MIDTERM" ? "30%" : "70%");
+
+const pickDistinctOptions = (seed) => {
+  const used = new Set();
+  const options = [];
+  let cursor = (seed * 7) % optionPool.length;
+  while (options.length < 4) {
+    const text = optionPool[cursor % optionPool.length];
+    if (!used.has(text)) {
+      used.add(text);
+      options.push(text);
+    }
+    cursor += 3;
+  }
+  return options;
+};
+
+const buildObjectiveOptions = (questions = []) => questions.map((_, index) => {
+  const texts = pickDistinctOptions(index + 1);
+  return ["A", "B", "C", "D"].map((key, idx) => ({ key, text: texts[idx] }));
+});
 
 const loadCourses = async () => {
   const response = await request.get("/api/student/courses", { params: { studentId: user.userId || user.id } });
@@ -114,6 +153,7 @@ const openSubmit = (row) => {
   current.value = row;
   const lines = normalize(row.description || "").split("\n").map((item) => item.trim()).filter(Boolean);
   objectiveQuestions.value = lines.filter((item) => item.includes("（2分）") || item.includes("(2)") || item.includes("(2分)"));
+  objectiveOptions.value = buildObjectiveOptions(objectiveQuestions.value);
   subjectiveQuestions.value = lines.filter((item) => item.includes("（10分）") || item.includes("(10)") || item.includes("(10分)"));
   objectiveAnswers.value = Array(objectiveQuestions.value.length).fill("");
   subjectiveAnswers.value = Array(subjectiveQuestions.value.length).fill("");

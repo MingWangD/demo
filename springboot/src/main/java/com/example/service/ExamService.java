@@ -280,11 +280,10 @@ public class ExamService {
         StudentAcademic academicQuery = new StudentAcademic();
         academicQuery.setStudentId(studentId);
         StudentAcademic academic = studentAcademicMapper.selectAll(academicQuery).stream().findFirst().orElse(null);
-        if (academic == null) {
+        boolean isNewAcademic = academic == null;
+        if (isNewAcademic) {
             academic = new StudentAcademic();
             academic.setStudentId(studentId);
-            academic.setUpdateTime(LocalDateTime.now());
-            studentAcademicMapper.insert(academic);
         }
         academic.setTotalCredit(totalCredit);
         academic.setEarnedCredit(earnedCredit);
@@ -292,7 +291,11 @@ public class ExamService {
         academic.setGpaColor(GpaColorUtil.resolveColor(gpa));
         academic.setRiskNote(completedCourseCount == 0 ? GPA_PENDING_NOTE : "WEIGHTED_TERM_GPA");
         academic.setUpdateTime(LocalDateTime.now());
-        studentAcademicMapper.updateById(academic);
+        if (isNewAcademic) {
+            studentAcademicMapper.insert(academic);
+        } else {
+            studentAcademicMapper.updateById(academic);
+        }
     }
 
     public BigDecimal examWeight(String examType) {

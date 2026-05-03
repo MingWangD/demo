@@ -140,11 +140,7 @@ public class FeatureExtractor {
         feature.setHomeworkAvgScore(homeworkAvg.setScale(2, RoundingMode.HALF_UP));
         feature.setExamAvgScore(examAvg.setScale(2, RoundingMode.HALF_UP));
         feature.setEarnedCredit(academic == null ? BigDecimal.ZERO : academic.getEarnedCredit());
-        if (academic != null && "PENDING_FINAL_GPA".equals(academic.getRiskNote())) {
-            feature.setGpa(null);
-        } else {
-            feature.setGpa(academic == null ? BigDecimal.ZERO : academic.getGpa());
-        }
+        feature.setGpa(academic == null || academic.getGpa() == null ? BigDecimal.ZERO : academic.getGpa());
         feature.setMissingHomeworkCount(Math.max(totalHomework - submittedHomework, 0));
         feature.setAbsentExamCount(absentExamCount);
         feature.setRecentRiskTrend(trend);
